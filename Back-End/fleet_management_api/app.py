@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
+from werkzeug.security import generate_password_hash
 import pyodbc
 
 app = Flask(__name__)
@@ -8,7 +9,7 @@ app = Flask(__name__)
 conn = pyodbc.connect(r'DRIVER={SQL Server};SERVER=DESKTOP-G1KJ375\SQLEXPRESS01;DATABASE=FleetManagementDB;Trusted_Connection=yes;')
 
 
-@app.route('/api/users', methods=['POST'])
+@app.route('/api/register', methods=['POST'])
 def create_user():
     data = request.json
     name = data.get('name')
@@ -21,14 +22,14 @@ def create_user():
         return jsonify({'message': 'Name, email, and password are required'}), 400
 
     # Hash the password (ensure you have a hashing function)
-    password_hash = password  # Implement your hashing function
+    hashed_password = generate_password_hash(password, method='sha256')
 
     try:
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO Users (Name, Email, PasswordHash, PhoneNumber, Role)
             VALUES (?, ?, ?, ?, ?)
-        ''', (name, email, password_hash, phone_number, role))
+        ''', (name, email, hashed_password, phone_number, role))
 
         # Retrieve the last inserted ID
         cursor.execute('SELECT SCOPE_IDENTITY()')
