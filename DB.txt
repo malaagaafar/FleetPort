@@ -1,0 +1,67 @@
+# Modify this code to update the DB schema diagram.
+# To reset the sample schema, replace everything with
+# two dots ('..' - without quotes).
+
+
+users
+---
+*user_id string pk FK >- Vehicles.OwnerId
+first_name string
+last_name string
+email string
+company string
+country string
+phone_number int
+  
+
+Vehicles
+---
+Vehicle_Id int pk
+OwnerId int fk
+Name string
+Make NVARCHAR(100)
+Model NVARCHAR(100)
+Type  list
+Image bit
+VIN NVARCHAR(100)
+LicensePlate_1 NVARCHAR(50)
+Linked_Vehicle list
+Device_Key string
+
+Readings
+---
+*reading_id int pk
+*Device_Key int FK >- Vehicles.Device_Key
+*OdometerReading string
+*Oil_level int
+*EngineStatus BIT
+*CreatedAt DATETIME
+*Brake int
+*Event string
+*Card_Key string
+Datetime datetime
+
+
+Driver
+---
+Driver_Id int pk
+Vehicle_Id int FK >- Vehicles.Vehicle_Id
+First_Name string
+Last_Name string
+hire_date  date
+Image bit
+Card_Key string
+login_username string
+login_pass string
+
+Driver_Performance
+---
+Driver_id srting FK >- Driver.Driver_Id
+Device_Key string
+Card_Key string
+active_datetime datetime 
+logout_datetime datetime
+Datetime datetime
+
+
+
