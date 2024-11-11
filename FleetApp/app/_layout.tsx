@@ -25,6 +25,9 @@ export default function RootLayout() {
       {/*<Stack.Screen name="index" />*/}
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
+      {/*<Stack.Screen name="(inputs)" options={{ headerShown: true }} />*/}
+      {/*<Stack.Screen name="(screens)" options={{ headerShown: true }} />*/}
+
     </Stack>
   );
 }

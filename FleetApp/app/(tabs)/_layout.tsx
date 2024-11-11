@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image, View, TouchableOpacity, StatusBar } from 'react-native';
 
@@ -19,7 +19,7 @@ function HeaderRight() {
           }}
         />
       </TouchableOpacity>
-      <TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push('../(screens)/FinancialScreen')}>
         <Image 
           source={require('../../assets/icons/coin.png')}
           style={{
@@ -28,7 +28,7 @@ function HeaderRight() {
           }}
         />
       </TouchableOpacity>
-      <TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push('../(screens)/AlertsScreen')}>
         <Image 
           source={require('../../assets/icons/bell.png')}
           style={{
@@ -48,7 +48,7 @@ function LiveHeader() {
       marginRight: 15,
       alignItems: 'center',
     }}>
-      <TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push('../(inputs)/ScheduleTrip')}>
         <Image 
           source={require('../../assets/icons/plus.png')}
           style={{
