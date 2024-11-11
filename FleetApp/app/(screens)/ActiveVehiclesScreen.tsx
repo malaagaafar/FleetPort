@@ -1,13 +1,13 @@
 import { View, StyleSheet, TouchableOpacity, Image, Text } from 'react-native';
 import { Stack, router } from 'expo-router';
 
-export default function AlertsScreen() {
+export default function ActiveVehiclesScreen() {
   return (
     <>
       <Stack.Screen 
         options={{
           headerShown: true,
-          title: 'Alerts',
+          title: 'Active Vehicles',
           headerLeft: () => (
             <TouchableOpacity 
               onPress={() => router.back()}
@@ -22,7 +22,7 @@ export default function AlertsScreen() {
         }} 
       />
       <View style={styles.container}>
-        <Text>Alerts Screen Content</Text>
+        <Text>Active Vehicles Screen Content</Text>
       </View>
     </>
   );

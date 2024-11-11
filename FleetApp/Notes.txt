@@ -1,0 +1,17 @@
+We have the overall design for the app, now we need to implement the functionality.
+
+The main functionality we need to implement is the ability to schedule trips, services, and expenses.
+
+We also need to be able to view trip info, vehicle info, and driver info.
+
+The app will pull the data from Geotab API.
+
+We need to address the data architecture for the app, that maps the data from Geotab API to the app's data model.
+
+Geotab will give up the data about the vehicles, drivers, and trips.
+
+Our app will post vehicle, driver and trip info to Geotab API.
+
+We will use SQLite to store the data in the local database.
+
+We will use Expo SQLite to handle the SQLite database.

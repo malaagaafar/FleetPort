@@ -1,13 +1,13 @@
 import { View, StyleSheet, TouchableOpacity, Image, Text } from 'react-native';
 import { Stack, router } from 'expo-router';
 
-export default function AddDriver() {
+export default function ScheduleTrip() {
   return (
     <>
       <Stack.Screen 
         options={{    
           headerShown: true,
-          title: 'Add Driver',
+          title: 'Schedule Trip',
           headerLeft: () => (
             <TouchableOpacity 
               onPress={() => router.back()}
@@ -27,7 +27,7 @@ export default function AddDriver() {
         }} 
       />
       <View style={styles.container}>
-        <Text>Add Driver Screen Content</Text>
+        <Text>Schedule Trip Screen Content</Text>
       </View>
     </>
   );
