@@ -1,0 +1,48 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  name          String
+  companyName   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  devices       Device[]
+  isActive      Boolean   @default(true)
+
+  @@map("users")
+}
+
+model Device {
+  id              String    @id @default(uuid())
+  serialNumber    String    @unique
+  userId          String
+  geotabDeviceId  String?
+  vehicleInfo     Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastSync        DateTime?
+  isActive        Boolean   @default(true)
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@map("devices")
+}
+
+model SyncLog {
+  id            String    @id @default(uuid())
+  deviceId      String
+  syncType      String
+  syncStatus    String
+  errorMessage  String?
+  createdAt     DateTime  @default(now())
+
+  @@map("sync_logs")
+}
