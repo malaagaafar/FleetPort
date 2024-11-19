@@ -1,0 +1,47 @@
+src/
+├── config/
+│   ├── database.js
+│   ├── traccar.js
+│   └── constants.js
+├── models/
+│   ├── Vehicle.js
+│   ├── Driver.js
+│   ├── Trip.js
+│   ├── Sensor.js
+│   ├── Company.js
+│   ├── User.js
+│   └── Marketplace.js
+├── controllers/
+│   ├── vehicleController.js
+│   ├── driverController.js
+│   ├── tripController.js
+│   ├── sensorController.js
+│   ├── telematicsController.js
+│   ├── marketplaceController.js
+│   ├── authController.js
+│   └── analyticsController.js
+├── services/
+│   ├── traccarService.js
+│   ├── telematicsService.js
+│   ├── notificationService.js
+│   ├── analyticsService.js
+│   └── marketplaceService.js
+├── middleware/
+│   ├── auth.js
+│   ├── validation.js
+│   ├── errorHandler.js
+│   └── logger.js
+├── routes/
+│   ├── vehicleRoutes.js
+│   ├── driverRoutes.js
+│   ├── tripRoutes.js
+│   ├── sensorRoutes.js
+│   ├── marketplaceRoutes.js
+│   └── authRoutes.js
+├── utils/
+│   ├── helpers.js
+│   ├── validators.js
+│   └── formatters.js
+├── websocket/
+│   └── socketHandler.js
+└── app.js

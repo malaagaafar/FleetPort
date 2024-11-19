@@ -1,48 +1,91 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Link, router } from 'expo-router';
+import { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
-    const handleLogin = () => {
-        // الانتقال مباشرة إلى الصفحة الرئيسية
-        router.replace('/(tabs)');
-        };
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+    });
+
+    const handleLogin = async () => {
+        try {
+            const response = await fetch('http://919e-156-197-240-209.ngrok-free.app/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'ngrok-skip-browser-warning': '69420'
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const responseData = await response.json();
+
+            if (response.ok) {
+                // تخزين الـ token
+                await AsyncStorage.setItem('userToken', responseData.token);
+                await AsyncStorage.setItem('userData', JSON.stringify(responseData.user));
+                
+                console.log('تم تسجيل الدخول بنجاح:', responseData);
+                router.replace('/(tabs)');
+            } else {
+                Alert.alert(
+                    "خطأ في تسجيل الدخول",
+                    responseData.message || "حدث خطأ غير متوقع"
+                );
+            }
+        } catch (error) {
+            console.error('خطأ في الاتصال:', error);
+            Alert.alert(
+                "خطأ",
+                "حدث خطأ في الاتصال بالخادم"
+            );
+        }
+    };
     
-  return (
-    <View style={styles.container}>
-      <View style={styles.logoContainer}>
-        <Text style={styles.logoText}>cPORT</Text>
-        <Text style={styles.subText}>FleetManager</Text>
-      </View>
+    return (
+        <View style={styles.container}>
+            <View style={styles.logoContainer}>
+                <Text style={styles.logoText}>cPORT</Text>
+                <Text style={styles.subText}>FleetManager</Text>
+            </View>
 
-      <View style={styles.formContainer}>
-        <Text style={styles.label}>Username</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Username"
-          autoCapitalize="none"
-        />
+            <View style={styles.formContainer}>
+                <Text style={styles.label}>Email or Phone Number</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Email or Phone Number"
+                    autoCapitalize="none"
+                    value={formData.email}
+                    onChangeText={(text) => setFormData({ ...formData, email: text })}
+                    keyboardType="email-address"
+                />
 
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          secureTextEntry
-        />
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Password"
+                    secureTextEntry
+                    value={formData.password}
+                    onChangeText={(text) => setFormData({ ...formData, password: text })}
+                />
 
-        <TouchableOpacity 
-          style={styles.loginButton} 
-          onPress={handleLogin}
-        >
-          <Text style={styles.loginButtonText}>Login</Text>
-        </TouchableOpacity>
+                <TouchableOpacity 
+                    style={styles.loginButton} 
+                    onPress={handleLogin}
+                >
+                    <Text style={styles.loginButtonText}>Login</Text>
+                </TouchableOpacity>
 
-        <View style={styles.signupContainer}>
-          <Text style={styles.signupText}>Do not have an account? </Text>
-          <Link href="./sign-up" style={styles.signupLink}>Sign up</Link>
+                <View style={styles.signupContainer}>
+                    <Text style={styles.signupText}>Do not have an account? </Text>
+                    <Link href="./sign-up" style={styles.signupLink}>Sign Up</Link>
+                </View>
+            </View>
         </View>
-      </View>
-    </View>
-  );
+    );
 }
 
 const styles = StyleSheet.create({
