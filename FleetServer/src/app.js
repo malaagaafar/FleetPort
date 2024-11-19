@@ -4,6 +4,10 @@ const cors = require('cors');
 const { sequelize } = require('./config/database');
 const User = require('./models/User'); // تأكد من استيراد النموذج
 const authRoutes = require('./routes/authRoutes');
+const deviceCatalogRoutes = require('./routes/deviceCatalogroutes');
+const webhookRoutes = require('./routes/webhook.routes');
+
+
 
 const app = express();
 
@@ -12,6 +16,9 @@ app.use(express.json());
 
 // المسارات
 app.use('/api/auth', authRoutes);
+//app.use('/api/catalog', deviceCatalogRoutes);
+//app.use('/webhook', webhookRoutes);
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {

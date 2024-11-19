@@ -11,7 +11,7 @@ export default function LoginScreen() {
 
     const handleLogin = async () => {
         try {
-            const response = await fetch('http://919e-156-197-240-209.ngrok-free.app/api/auth/login', {
+            const response = await fetch('https://hookworm-primary-nicely.ngrok-free.app/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
