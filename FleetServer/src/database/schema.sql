@@ -154,6 +154,52 @@ CREATE TABLE partner_password_reset_tokens (
 ------------------------------------
 -- Devices
 -- الأنواع المعرفة
+-- أنواع المركبات
+CREATE TYPE vehicle_type AS ENUM (
+    'truck',            -- شاحنة
+    'van',             -- فان
+    'pickup',          -- بيك أب
+    'refrigerated',    -- مبرد
+    'tanker',          -- صهريج
+    'trailer'          -- مقطورة
+);
+-- حالات المركبة
+CREATE TYPE vehicle_status AS ENUM (
+    'active',         -- نشط
+    'inactive',       -- غير نشط
+    'on_trip',        -- في رحلة
+    'maintenance',     -- في الصيانة
+    'out_of_service',  -- خارج الخدمة
+    'retired'          -- متقاعد
+);
+-- جدول المركبات
+CREATE TABLE vehicles (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    type vehicle_type NOT NULL,
+    make VARCHAR(50) NOT NULL,           -- الشركة المصنعة
+    model VARCHAR(50) NOT NULL,          -- الموديل
+    year INTEGER NOT NULL,               -- سنة الصنع
+    plate_number VARCHAR(20) UNIQUE NOT NULL,
+    vin VARCHAR(50) UNIQUE,             -- رقم الهيكل
+    registration_number VARCHAR(50),     -- رقم التسجيل
+    registration_expiry DATE,
+    insurance_number VARCHAR(50),
+    insurance_expiry DATE,
+    status vehicle_status DEFAULT 'inactive',
+    -- معلومات تقنية
+    max_load_weight DECIMAL(10,2),      -- أقصى وزن حمولة (كجم)
+    fuel_tank_capacity INTEGER,         -- سعة خزان الوقود (لتر)
+    current_odometer INTEGER DEFAULT 0, -- عداد المسافات الحالي
+    -- معلومات إضافية
+    specifications JSONB DEFAULT '{}',   -- مواصفات إضافية
+    documents JSONB DEFAULT '[]',        -- روابط المستندات
+    notes TEXT,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TYPE primary_device_type AS ENUM (
     'teltonika_fmb920',
     'teltonika_fmb130',
@@ -248,37 +294,7 @@ CREATE TABLE purchased_sensors (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
--- تعديل نوع حالة التعيين
-CREATE TYPE assignment_status AS ENUM (
-    'pending_installation',    -- في انتظار التركيب الفعلي
-    'installation_verified',   -- تم التحقق من التركيب
-    'receiving_data',         -- يستقبل بيانات
-    'connection_lost',        -- فقد الاتصال
-    'inactive'                -- غير نشط
-);
--- تعديل جدول تعيين الأجهزة
-CREATE TABLE device_vehicle_assignments (
-    id SERIAL PRIMARY KEY,
-    device_id INTEGER REFERENCES purchased_primary_devices(id),
-    vehicle_id INTEGER REFERENCES vehicles(id),
-    traccar_id INTEGER UNIQUE,               -- معرف Traccar (يمكن أن يكون NULL في البداية)
-    status assignment_status DEFAULT 'pending_installation',
-    installation_verified_at TIMESTAMP WITH TIME ZONE,  -- وقت التحقق من التركيب
-    first_data_received_at TIMESTAMP WITH TIME ZONE,    -- وقت استلام أول بيانات
-    last_connection TIMESTAMP WITH TIME ZONE,           -- آخر اتصال
-    deactivated_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
--- إضافة جدول للتنبيهات/الإشعارات الخاصة بالتركيب
-CREATE TABLE installation_notifications (
-    id SERIAL PRIMARY KEY,
-    assignment_id INTEGER REFERENCES device_vehicle_assignments(id),
-    type VARCHAR(50) NOT NULL,               -- نوع التنبيه
-    message TEXT NOT NULL,                   -- رسالة التنبيه
-    read_at TIMESTAMP WITH TIME ZONE,        -- وقت قراءة التنبيه
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+
 -- تعيين المستشعرات للأجهزة (النسخة المبسطة)
 CREATE TABLE sensor_device_assignments (
     id SERIAL PRIMARY KEY,
@@ -311,6 +327,37 @@ CREATE TABLE device_maintenance_logs (
     performed_by VARCHAR(100),
     performed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     next_maintenance_date TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+-- تعديل نوع حالة التعيين
+CREATE TYPE assignment_status AS ENUM (
+    'pending_installation',    -- في انتظار التركيب الفعلي
+    'installation_verified',   -- تم التحقق من التركيب
+    'receiving_data',         -- يستقبل بيانات
+    'connection_lost',        -- فقد الاتصال
+    'inactive'                -- غير نشط
+);
+-- تعديل جدول تعيين الأجهزة
+CREATE TABLE device_vehicle_assignments (
+    id SERIAL PRIMARY KEY,
+    device_id INTEGER REFERENCES purchased_primary_devices(id),
+    vehicle_id INTEGER REFERENCES vehicles(id),
+    traccar_id INTEGER UNIQUE,               -- معرف Traccar (يمكن أن يكون NULL في البداية)
+    status assignment_status DEFAULT 'pending_installation',
+    installation_verified_at TIMESTAMP WITH TIME ZONE,  -- وقت التحقق من التركيب
+    first_data_received_at TIMESTAMP WITH TIME ZONE,    -- وقت استلام أول بيانات
+    last_connection TIMESTAMP WITH TIME ZONE,           -- آخر اتصال
+    deactivated_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+-- إضافة جدول للتنبيهات/الإشعارات الخاصة بالتركيب
+CREATE TABLE installation_notifications (
+    id SERIAL PRIMARY KEY,
+    assignment_id INTEGER REFERENCES device_vehicle_assignments(id),
+    type VARCHAR(50) NOT NULL,               -- نوع التنبيه
+    message TEXT NOT NULL,                   -- رسالة التنبيه
+    read_at TIMESTAMP WITH TIME ZONE,        -- وقت قراءة التنبيه
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 -- إضافة نوع جديد لحالة صحة الجهاز
@@ -425,51 +472,7 @@ CREATE INDEX idx_sensor_readings_sensor ON sensor_readings(sensor_assignment_id)
 CREATE INDEX idx_sensor_readings_position ON sensor_readings(position_id);
 CREATE INDEX idx_sensor_readings_time ON sensor_readings(timestamp);
 -------------------------------------------------------------------
--- أنواع المركبات
-CREATE TYPE vehicle_type AS ENUM (
-    'truck',            -- شاحنة
-    'van',             -- فان
-    'pickup',          -- بيك أب
-    'refrigerated',    -- مبرد
-    'tanker',          -- صهريج
-    'trailer'          -- مقطورة
-);
--- حالات المركبة
-CREATE TYPE vehicle_status AS ENUM (
-    'active',         -- نشط
-    'inactive',       -- غير نشط
-    'on_trip',        -- في رحلة
-    'maintenance',     -- في الصيانة
-    'out_of_service',  -- خارج الخدمة
-    'retired'          -- متقاعد
-);
--- جدول المركبات
-CREATE TABLE vehicles (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    type vehicle_type NOT NULL,
-    make VARCHAR(50) NOT NULL,           -- الشركة المصنعة
-    model VARCHAR(50) NOT NULL,          -- الموديل
-    year INTEGER NOT NULL,               -- سنة الصنع
-    plate_number VARCHAR(20) UNIQUE NOT NULL,
-    vin VARCHAR(50) UNIQUE,             -- رقم الهيكل
-    registration_number VARCHAR(50),     -- رقم التسجيل
-    registration_expiry DATE,
-    insurance_number VARCHAR(50),
-    insurance_expiry DATE,
-    status vehicle_status DEFAULT 'inactive',
-    -- معلومات تقنية
-    max_load_weight DECIMAL(10,2),      -- أقصى وزن حمولة (كجم)
-    fuel_tank_capacity INTEGER,         -- سعة خزان الوقود (لتر)
-    current_odometer INTEGER DEFAULT 0, -- عداد المسافات الحالي
-    -- معلومات إضافية
-    specifications JSONB DEFAULT '{}',   -- مواصفات إضافية
-    documents JSONB DEFAULT '[]',        -- روابط المستندات
-    notes TEXT,
-    
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+
 -- جدول صيانة المركبات
 CREATE TABLE vehicle_maintenance (
     id SERIAL PRIMARY KEY,
