@@ -99,6 +99,44 @@ function MenuHeader() {
     </View>
   );
 }
+function DevicesHeader() {
+  return (
+    <View style={{ 
+      flexDirection: 'row', 
+      gap: 16,
+      marginRight: 15,
+      alignItems: 'center',
+    }}>
+      <TouchableOpacity>
+        <Image 
+          source={require('../../assets/icons/belld.png')}
+          style={{
+            width: 18,
+            height: 20,
+          }}
+        />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push('../(screens)/cart')}>
+        <Image 
+          source={require('../../assets/icons/shopping-cart.png')}
+          style={{
+            width: 22,
+            height: 21,
+          }}
+        />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push('../(screens)/orders/orders')}>
+        <Image 
+          source={require('../../assets/icons/menud.png')}
+          style={{
+            width: 22,
+            height: 16,
+          }}
+        />
+      </TouchableOpacity>
+    </View>
+  );
+}
 
 
 export default function TabsLayout() {
@@ -255,9 +293,9 @@ export default function TabsLayout() {
           }}
         />
       <Tabs.Screen
-        name="menu"
+        name="devices"
         options={{
-          title: 'Menu',  // يمكنك استخدام صورة الشعار بدلاً من النص
+          title: 'Devices',  // يمكنك استخدام صورة الشعار بدلاً من النص
           headerTitleStyle: {
             fontFamily: 'Spantaran',  // تأكد من تحميل الخط الصحيح
             fontSize: 24,
@@ -266,12 +304,12 @@ export default function TabsLayout() {
             marginLeft: 0,  // إضافة هذا السطر
             paddingLeft: 2, // إضافة هذا السطر
           },
-          headerRight: () => <MenuHeader />,
+          headerRight: () => <DevicesHeader />,
           tabBarIcon: ({ focused }) => (
             <Image 
               source={focused 
-                ? require('../../assets/icons/menu-a.png')
-                : require('../../assets/icons/menu-o.png')
+                ? require('../../assets/icons/device1.png')
+                : require('../../assets/icons/device0.png')
               }
               style={{
                 width: 24,
@@ -280,7 +318,7 @@ export default function TabsLayout() {
               }}
             />
           ),
-          tabBarLabel: 'Menu',
+          tabBarLabel: 'Devices',
         }}
       />
     </Tabs>
