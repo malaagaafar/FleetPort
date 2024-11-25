@@ -6,46 +6,37 @@ import { addToCart } from '../../../store/slices/cartSlice';
 import { Ionicons } from '@expo/vector-icons';
 
 interface Device {
-  id: string;
+  id: number;
   name: string;
   price: number;
-  image: any;
-  category: 'primary' | 'sensor';
+  imageUrl: string;
+  category: 'primary_devices' | 'sensors';
   type?: string;
-  rating?: number;
-  description?: string[];
+  specifications?: Record<string, any>;
+  description?: string;
+  installation_fee?: number;
+  supported_sensors?: string[];
 }
 
 export default function DeviceDetailsScreen() {
-    const params = useLocalSearchParams();
-    const dispatch = useDispatch();
-    const [quantity, setQuantity] = useState(1);
-    const [selectedTab, setSelectedTab] = useState('Description');
-  
-    const device: Device = JSON.parse(params.device as string);
-  
-    const handleAddToCart = () => {
-      // نرسل المنتج مع الكمية المحددة في العداد
-      const itemToAdd = {
-        id: device.id,
-        name: device.name,
-        price: device.price,
-        image: device.image,
-        quantity: quantity // هذه الكمية ستضاف إلى عداد السلة
-      };
-      
-      dispatch(addToCart(itemToAdd));
-      router.push("/cart");
+  const params = useLocalSearchParams();
+  const dispatch = useDispatch();
+  const [quantity, setQuantity] = useState(1);
+  const [selectedTab, setSelectedTab] = useState('Description');
+
+  const device: Device = JSON.parse(params.device as string);
+
+  const handleAddToCart = () => {
+    const itemToAdd = {
+      id: device.id.toString(),
+      name: device.name,
+      price: device.price,
+      image: { uri: device.imageUrl },
+      quantity: quantity
     };
-
-  const decreaseQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
-    }
-  };
-
-  const increaseQuantity = () => {
-    setQuantity(quantity + 1);
+    
+    dispatch(addToCart(itemToAdd));
+    router.push("/cart");
   };
 
   return (
@@ -55,7 +46,7 @@ export default function DeviceDetailsScreen() {
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Devices</Text>
+          <Text style={styles.headerTitle}>Device Details</Text>
           <View style={styles.headerRight}>
             <TouchableOpacity style={styles.headerIcon}>
               <Ionicons name="heart-outline" size={24} color="#000" />
@@ -69,106 +60,122 @@ export default function DeviceDetailsScreen() {
           </View>
         </View>
 
-      <ScrollView>
-        <Image source={device.image} style={styles.image} resizeMode="contain" />
-        
-        <View style={styles.dotsContainer}>
-          <View style={[styles.dot, styles.activeDot]} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
-        </View>
+        <ScrollView>
+          <Image 
+            source={{ uri: device.imageUrl }} 
+            style={styles.image} 
+            resizeMode="contain" 
+          />
+          
+          <View style={styles.dotsContainer}>
+            <View style={[styles.dot, styles.activeDot]} />
+            <View style={styles.dot} />
+            <View style={styles.dot} />
+          </View>
 
-        <View style={styles.productInfo}>
-          <View style={styles.titleRow}>
-            <Text style={styles.productName}>{device.name}</Text>
-            {device.rating && (
-              <View style={styles.ratingContainer}>
-                <Ionicons name="star" size={16} color="#FFD700" />
-                <Text style={styles.rating}>{device.rating}</Text>
+          <View style={styles.productInfo}>
+            <View style={styles.titleRow}>
+              <Text style={styles.productName}>{device.name}</Text>
+              <Text style={styles.price}>${device.price}</Text>
+              {device.installation_fee && (
+                <Text style={styles.installationFee}>
+                  Installation Fee: ${device.installation_fee}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.tabs}>
+              <TouchableOpacity 
+                style={[styles.tab, selectedTab === 'Description' && styles.activeTab]}
+                onPress={() => setSelectedTab('Description')}
+              >
+                <Text style={[styles.tabText, selectedTab === 'Description' && styles.activeTabText]}>
+                  Description
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.tab, selectedTab === 'Specifications' && styles.activeTab]}
+                onPress={() => setSelectedTab('Specifications')}
+              >
+                <Text style={[styles.tabText, selectedTab === 'Specifications' && styles.activeTabText]}>
+                  Specifications
+                </Text>
+              </TouchableOpacity>
+              {device.supported_sensors && (
+                <TouchableOpacity 
+                  style={[styles.tab, selectedTab === 'Supported' && styles.activeTab]}
+                  onPress={() => setSelectedTab('Supported')}
+                >
+                  <Text style={[styles.tabText, selectedTab === 'Supported' && styles.activeTabText]}>
+                    Supported Sensors
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {selectedTab === 'Description' && device.description && (
+              <View style={styles.descriptionContent}>
+                <Text style={styles.descriptionItem}>{device.description}</Text>
               </View>
             )}
-            <Text style={styles.price}>${device.price}</Text>
+
+            {selectedTab === 'Specifications' && device.specifications && (
+              <View style={styles.descriptionContent}>
+                {Object.entries(device.specifications).map(([key, value]) => (
+                  <Text key={key} style={styles.descriptionItem}>
+                    {key}: {value}
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            {selectedTab === 'Supported' && device.supported_sensors && (
+              <View style={styles.descriptionContent}>
+                {device.supported_sensors.map((sensor, index) => (
+                  <Text key={index} style={styles.descriptionItem}>
+                    • {sensor}
+                  </Text>
+                ))}
+              </View>
+            )}
           </View>
+        </ScrollView>
 
-          <View style={styles.tabs}>
+        <View style={styles.bottomBar}>
+          <View style={styles.quantityControl}>
             <TouchableOpacity 
-              style={[styles.tab, selectedTab === 'Description' && styles.activeTab]}
-              onPress={() => setSelectedTab('Description')}
+              onPress={() => setQuantity(prev => Math.max(1, prev - 1))}
+              style={styles.quantityButton}
             >
-              <Text style={[styles.tabText, selectedTab === 'Description' && styles.activeTabText]}>
-                Description
-              </Text>
+              <Ionicons name="remove" size={24} color="#000" />
             </TouchableOpacity>
+            <Text style={styles.quantityText}>{quantity}</Text>
             <TouchableOpacity 
-              style={[styles.tab, selectedTab === 'Reviews' && styles.activeTab]}
-              onPress={() => setSelectedTab('Reviews')}
+              onPress={() => setQuantity(prev => prev + 1)}
+              style={styles.quantityButton}
             >
-              <Text style={[styles.tabText, selectedTab === 'Reviews' && styles.activeTabText]}>
-                Reviews
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.tab, selectedTab === 'Specifications' && styles.activeTab]}
-              onPress={() => setSelectedTab('Specifications')}
-            >
-              <Text style={[styles.tabText, selectedTab === 'Specifications' && styles.activeTabText]}>
-                Product Specifications
-              </Text>
+              <Ionicons name="add" size={24} color="#000" />
             </TouchableOpacity>
           </View>
-
-          {selectedTab === 'Description' && device.description && (
-            <View style={styles.descriptionContent}>
-              {device.description.map((item, index) => (
-                <Text key={index} style={styles.descriptionItem}>{item}</Text>
-              ))}
-            </View>
-          )}
-        </View>
-      </ScrollView>
-
-      <View style={styles.bottomBar}>
-        <View style={styles.quantityControl}>
           <TouchableOpacity 
-            onPress={() => setQuantity(prev => Math.max(1, prev - 1))}
-            style={styles.quantityButton}
+            style={styles.addToCartButton}
+            onPress={handleAddToCart}
           >
-            <Ionicons name="remove" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.quantityText}>{quantity}</Text>
-          <TouchableOpacity 
-            onPress={() => setQuantity(prev => prev + 1)}
-            style={styles.quantityButton}
-          >
-            <Ionicons name="add" size={24} color="#000" />
+            <Text style={styles.addToCartText}>ADD TO CART</Text>
+            <Ionicons name="cart-outline" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity 
-          style={styles.addToCartButton}
-          onPress={handleAddToCart}
-        >
-          <Text style={styles.addToCartText}>ADD TO CART</Text>
-          <Ionicons name="cart-outline" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-    headerRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-      },
-      headerIcon: {
-        marginLeft: 15,
-      },
-    safeArea: {
-        flex: 1,
-        backgroundColor: '#fff',
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-      },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',
@@ -184,6 +191,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerIcon: {
+    marginLeft: 15,
   },
   image: {
     width: '100%',
@@ -217,19 +231,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  rating: {
-    marginLeft: 4,
-    color: '#666',
-  },
   price: {
     fontSize: 24,
     fontWeight: '600',
     color: '#000',
+    marginBottom: 8,
+  },
+  installationFee: {
+    fontSize: 16,
+    color: '#666',
   },
   tabs: {
     flexDirection: 'row',

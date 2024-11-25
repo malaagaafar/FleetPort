@@ -4,7 +4,7 @@ const cors = require('cors');
 const { sequelize } = require('./config/database');
 const User = require('./models/User'); // تأكد من استيراد النموذج
 const authRoutes = require('./routes/authRoutes');
-const deviceCatalogRoutes = require('./routes/deviceCatalogroutes');
+const deviceRoutes = require('./routes/deviceRoutes');
 const webhookRoutes = require('./routes/webhook.routes');
 
 
@@ -18,6 +18,8 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 //app.use('/api/catalog', deviceCatalogRoutes);
 //app.use('/webhook', webhookRoutes);
+app.use('/api/devices', require('./routes/deviceRoutes'));
+app.use('/api/purchase', require('./routes/purchaseRoutes'));
 
 
 // Error handling middleware

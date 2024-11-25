@@ -2,11 +2,11 @@ const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
 const sequelize = new Sequelize({
-    database: process.env.DB_NAME,
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD, // تم تغييرها من DB_PASS إلى DB_PASSWORD
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
+    database: process.env.DB_NAME || 'cport',
+    username: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || '250920',
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
     logging: false,
     dialectOptions: {
@@ -32,4 +32,4 @@ const testConnection = async () => {
 
 testConnection();
 
-module.exports = { sequelize };
+module.exports = { sequelize };  // تصدير sequelize مباشرة

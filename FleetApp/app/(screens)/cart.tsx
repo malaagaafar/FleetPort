@@ -1,16 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { router } from 'expo-router';
 import { RootState } from '../../store/store';
 import { Ionicons } from '@expo/vector-icons';
 import { incrementQuantity, decrementQuantity } from '../../store/slices/cartSlice';
+import { useNavigation } from '@react-navigation/native';
+import { handleCheckout } from '../services/checkoutService'; // استيراد الدالة
+
 
 export default function CartScreen() {
   const cartItems = useSelector((state: RootState) => state.cart.items);
   const dispatch = useDispatch();
+  const [hasCheckedOut, setHasCheckedOut] = useState(false);
+  const userId = useSelector((state: RootState) => state.auth.user.id);
+
 
   const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  const newOrder = {
+    id: `ORD-${Date.now()}`,
+    items: cartItems,
+    total: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+    date: new Date().toISOString(),
+    status: 'pending' as const
+  }
+
+  const handleCartCheckout = () => {
+      handleCheckout(newOrder, cartItems, userId, dispatch)
+      router.push('/order-confirmation');
+    }
+  
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -29,8 +49,8 @@ export default function CartScreen() {
       >
         {cartItems.map(item => (
           <View key={item.id} style={styles.cartItem}>
-            <Image source={item.image} style={styles.itemImage} />
-            <View style={styles.itemDetails}>
+              <Image source={item.image} style={styles.itemImage} />
+              <View style={styles.itemDetails}>
               <Text style={styles.itemName}>{item.name}</Text>
               <Text style={styles.itemPrice}>${item.price}</Text>
               <View style={styles.quantityControl}>
@@ -60,7 +80,7 @@ export default function CartScreen() {
           </View>
           <TouchableOpacity
             style={styles.checkoutButton}
-            onPress={() => router.push('/order-confirmation')}
+            onPress={handleCartCheckout}
           >
             <Text style={styles.checkoutText}>CHECKOUT</Text>
             <Ionicons name="arrow-forward" size={20} color="#fff" />
@@ -69,7 +89,7 @@ export default function CartScreen() {
       </View>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
     safeArea: {

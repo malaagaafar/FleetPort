@@ -1,0 +1,13 @@
+{"devices": 
+[
+    {"description": "جهاز تتبع احترافي مع دعم لبروتوكول GNSS/GSM. مثالي للسيارات والمركبات الخفيفة", "id": 1, "imageUrl": "https://example.com/images/fmb920.jpg", "installationFee": "50.00", "isActive": true, "name": "Teltonika FMB920", "price": "299.99", "specifications": [Object], "type": "teltonika_fmb920"}, 
+    {"description": "جهاز تتبع متقدم مع دعم CAN-BUS ومناسب للشاحنات والمركبات الثقيلة", "id": 2, "imageUrl": "https://example.com/images/fmb130.jpg", "installationFee": "75.00", "isActive": true, "name": "Teltonika FMB130", "price": "499.99", "specifications": [Object], "type": "teltonika_fmb130"}, 
+    {"description": "جهاز تتبع اقتصادي مناسب للسيارات الصغيرة والاستخدام الشخصي", "id": 3, "imageUrl": "https://example.com/images/gt06n.jpg", "installationFee": "35.00", "isActive": true, "name": "Concox GT06N", "price": "149.99", "specifications": [Object], "type": "concox_gt06n"}, 
+    {"description": "جهاز تتبع متطور مع كاميرا مدمجة ودعم للواي فاي", "id": 4, "imageUrl": "https://example.com/images/x3.jpg", "installationFee": "60.00", "isActive": true, "name": "Concox X3", "price": "399.99", "specifications": [Object], "type": "concox_x3"}, 
+    {"description": "جهاز تتبع GPS احترافي مع دعم 4G وبلوتوث", "id": 5, "imageUrl": "https://i.imgur.com/xottI6p.png", "installationFee": "50.00", "isActive": true, "name": "FMB920 GPS Tracker", "price": "149.99", "specifications": [Object], "type": "teltonika_fmb920"}, 
+    {"description": "جهاز تتبع متقدم مع دعم متعدد للمستشعرات", "id": 6, "imageUrl": "https://i.imgur.com/ThFDCNI.png", "installationFee": "75.00", "isActive": true, "name": "FMB130 Advanced Tracker", "price": "199.99", "specifications": [Object], "type": "teltonika_fmb130"}, 
+    {"description": "جهاز تتبع اقتصادي مع أداء موثوق", "id": 7, "imageUrl": "https://i.imgur.com/xottI6p.png", "installationFee": "30.00", "isActive": true, "name": "GT06N GPS Tracker", "price": "89.99", "specifications": [Object], "type": "concox_gt06n"}
+    ], 
+    "pagination": 
+    {"limit": 10, "page": 1, "pages": 1, "total": 7}, 
+    "success": true}

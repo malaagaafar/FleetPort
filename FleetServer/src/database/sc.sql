@@ -109,8 +109,32 @@ CREATE TYPE vehicle_type AS ENUM (
     'pickup',          -- بيك أب
     'refrigerated',    -- مبرد
     'tanker',          -- صهريج
-    'trailer'          -- مقطورة
+    'trailer',          -- مقطورة
+    'car',
+    'bus',
+    'trailer_head'    -- رأس تريلا
 );
+// ... existing code ...
+
+-- إنشاء نوع تعداد جديد للمقطورات
+CREATE TYPE trailer_type AS ENUM (
+    'flatbed',          -- سطحة
+    'box',              -- صندوق
+    'refrigerated',     -- مبرد
+    'tanker',          -- صهريج
+    'lowboy',          -- لوبوي
+    'car_carrier',     -- حمالة سيارات
+    'tipper',          -- قلاب
+    'curtainsider',    -- ستائر جانبية
+    'skeletal',        -- هيكلي
+    'extendable'       -- قابل للتمديد
+);
+
+-- إضافة الأعمدة الجديدة إلى جدول primary_devices
+ALTER TABLE primary_devices
+ADD COLUMN trailer_type trailer_type[];
+
+// ... existing code ...
 -- جدول المركبات
 CREATE TABLE vehicles (
     id SERIAL PRIMARY KEY,
@@ -199,12 +223,13 @@ CREATE TABLE partner_password_reset_tokens (
 -- الأنواع المعرفة
 -- أنواع المركبات
 
-CREATE TYPE primary_device_type AS ENUM (
-    'teltonika_fmb920',
-    'teltonika_fmb130',
-    'concox_gt06n',
-    'concox_x3'
-);
+--CREATE TYPE primary_device_type AS ENUM (
+  --  'teltonika_fmb920',
+-- 'teltonika_fmb130',
+ --   'concox_gt06n',
+ --   'concox_x3'
+--);
+
 CREATE TYPE sensor_type AS ENUM (
     'temperature',
     'door',
@@ -233,11 +258,25 @@ CREATE TYPE assignment_status AS ENUM (
     'connection_lost',        -- فقد الاتصال
     'inactive'                -- غير نشط
 );
+-- إنشاء نوع تعداد جديد للمقطورات
+CREATE TYPE trailer_type AS ENUM (
+    'flatbed',          -- سطحة
+    'box',              -- صندوق
+    'refrigerated',     -- مبرد
+    'tanker',          -- صهريج
+    'lowboy',          -- لوبوي
+    'car_carrier',     -- حمالة سيارات
+    'tipper',          -- قلاب
+    'curtainsider',    -- ستائر جانبية
+    'skeletal',        -- هيكلي
+    'extendable'       -- قابل للتمديد
+);
 -- كتالوج الأجهزة المتاحة للشراء
 CREATE TABLE primary_devices (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    type primary_device_type NOT NULL,
+    type vehicle_type NOT NULL,
+    trailer_type trailer_type[]
     model VARCHAR(50) NOT NULL,
     manufacturer VARCHAR(100),
     description TEXT,
@@ -252,6 +291,9 @@ CREATE TABLE primary_devices (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+-- إضافة الأعمدة الجديدة إلى جدول primary_devices
+ALTER TABLE primary_devices
+ADD COLUMN trailer_type trailer_type[];
 -- كتالوج المستشعرات
 CREATE TABLE sensors (
     id SERIAL PRIMARY KEY,

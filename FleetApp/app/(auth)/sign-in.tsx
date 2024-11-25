@@ -2,12 +2,16 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'reac
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch } from 'react-redux'; // إضافة هذا السطر
+import { setCredentials } from '../../store/slices/authSlice'; // تأكد من مسار الاستيراد الصحيح
 
 export default function LoginScreen() {
+    const dispatch = useDispatch(); // إضافة هذا السطر
     const [formData, setFormData] = useState({
         email: '',
         password: '',
-    });
+    })
+    ;
 
     const handleLogin = async () => {
         try {
@@ -28,6 +32,8 @@ export default function LoginScreen() {
                 await AsyncStorage.setItem('userToken', responseData.token);
                 await AsyncStorage.setItem('userData', JSON.stringify(responseData.user));
                 
+                dispatch(setCredentials({ user: responseData.user, token: responseData.token })); // إضافة هذا السطر
+
                 console.log('تم تسجيل الدخول بنجاح:', responseData);
                 router.replace('/(tabs)');
             } else {
