@@ -1,81 +1,13 @@
 const Vehicle = require('../models/Vehicle');
-const TelematicsService = require('../services/telematicsService');
 
-exports.getAllVehicles = async (req, res, next) => {
+// دالة لإنشاء مركبة جديدة
+exports.createVehicle = async (req, res) => {
   try {
-    const vehicles = await Vehicle.find({ company: req.user.company })
-      .populate('currentDriver')
-      .populate('sensors');
-    res.json(vehicles);
+    const vehicleData = req.body; // استلام البيانات من الطلب
+    const newVehicle = await Vehicle.create(vehicleData); // إنشاء مركبة جديدة
+    res.status(201).json(newVehicle); // إرجاع المركبة الجديدة مع حالة 201
   } catch (error) {
-    next(error);
-  }
-};
-
-exports.getVehicle = async (req, res, next) => {
-  try {
-    const vehicle = await Vehicle.findById(req.params.id)
-      .populate('currentDriver')
-      .populate('sensors');
-    if (!vehicle) {
-      return res.status(404).json({ message: 'Vehicle not found' });
-    }
-    res.json(vehicle);
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.createVehicle = async (req, res, next) => {
-  try {
-    const vehicle = new Vehicle({
-      ...req.body,
-      company: req.user.company
-    });
-    await vehicle.save();
-    res.status(201).json(vehicle);
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.updateVehicle = async (req, res, next) => {
-  try {
-    const vehicle = await Vehicle.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    if (!vehicle) {
-      return res.status(404).json({ message: 'Vehicle not found' });
-    }
-    res.json(vehicle);
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.deleteVehicle = async (req, res, next) => {
-  try {
-    const vehicle = await Vehicle.findByIdAndDelete(req.params.id);
-    if (!vehicle) {
-      return res.status(404).json({ message: 'Vehicle not found' });
-    }
-    res.status(204).send();
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.getVehicleLocation = async (req, res, next) => {
-  try {
-    const vehicle = await Vehicle.findById(req.params.id);
-    if (!vehicle) {
-      return res.status(404).json({ message: 'Vehicle not found' });
-    }
-    const location = await TelematicsService.getVehicleLocation(vehicle.telematicsDeviceId);
-    res.json(location);
-  } catch (error) {
-    next(error);
+    console.error(error);
+    res.status(500).json({ message: 'حدث خطأ أثناء إنشاء المركبة' }); // إرجاع رسالة خطأ
   }
 };

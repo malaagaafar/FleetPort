@@ -8,6 +8,10 @@ const sequelize = new Sequelize({
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
+    define: {
+        timestamps: true, // إذا كنت تريد استخدام الطوابع الزمنية
+        underscored: true, // إذا كنت تريد استخدام الأسماء المنخفضة
+    },
     logging: false,
     dialectOptions: {
         ssl: false

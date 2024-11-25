@@ -38,10 +38,6 @@ User.init({
         type: DataTypes.STRING,
         allowNull: false
     },
-    companyName: {
-        type: DataTypes.STRING,
-        allowNull: true
-    }
 }, {
     sequelize,
     modelName: 'User',

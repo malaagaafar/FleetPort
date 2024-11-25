@@ -20,6 +20,7 @@ app.use('/api/auth', authRoutes);
 //app.use('/webhook', webhookRoutes);
 app.use('/api/devices', require('./routes/deviceRoutes'));
 app.use('/api/purchase', require('./routes/purchaseRoutes'));
+app.use('/api/vehicles', require('./routes/vehicleRoutes'));
 
 
 // Error handling middleware

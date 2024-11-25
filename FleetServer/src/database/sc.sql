@@ -10,7 +10,7 @@ CREATE TABLE users (
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50),
     email VARCHAR(100) UNIQUE NOT NULL,
-    phone VARCHAR(20) NOT NULL,
+    phone_number VARCHAR(20) NOT NULL,
     business_name VARCHAR(100),
     password_hash VARCHAR(255) NOT NULL,
     status VARCHAR(20) DEFAULT 'active',
@@ -103,17 +103,7 @@ CREATE TYPE priority_level AS ENUM ('low', 'medium', 'high', 'critical');
 -------------------------------------------------------------------
 -- cPORTPartner App
 -- جدول حسابات الشركاء (للدخول على تطبيق الشركاء)
-CREATE TYPE vehicle_type AS ENUM (
-    'truck',            -- شاحنة
-    'van',             -- فان
-    'pickup',          -- بيك أب
-    'refrigerated',    -- مبرد
-    'tanker',          -- صهريج
-    'trailer',          -- مقطورة
-    'car',
-    'bus',
-    'trailer_head'    -- رأس تريلا
-);
+
 // ... existing code ...
 
 -- إنشاء نوع تعداد جديد للمقطورات
@@ -134,8 +124,18 @@ CREATE TYPE trailer_type AS ENUM (
 ALTER TABLE primary_devices
 ADD COLUMN trailer_type trailer_type[];
 
-// ... existing code ...
 -- جدول المركبات
+CREATE TYPE vehicle_type AS ENUM (
+    'truck',            -- شاحنة
+    'van',             -- فان
+    'pickup',          -- بيك أب
+    'refrigerated',    -- مبرد
+    'tanker',          -- صهريج
+    'trailer',          -- مقطورة
+    'car',
+    'bus',
+    'trailer_head'    -- رأس تريلا
+);
 CREATE TABLE vehicles (
     id SERIAL PRIMARY KEY,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,  -- تم تغييرها من INTEGER إلى UUID
@@ -311,6 +311,15 @@ CREATE TABLE sensors (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 -- الأجهزة المشتراة
+CREATE TABLE purchases (
+    id SERIAL PRIMARY KEY,
+    items JSONB NOT NULL,  -- Stores the cart items as JSON
+    total DECIMAL(10, 2) NOT NULL,  -- Total price of the order
+    date TIMESTAMP NOT NULL,  -- Date and time of the order
+    user_id UUID NOT NULL,  -- User ID who placed the order
+    FOREIGN KEY (user_id) REFERENCES users(id)  -- Assuming there is a 'users' table with an 'id' column
+);
+
 CREATE TABLE purchased_primary_devices (
     id SERIAL PRIMARY KEY,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,

@@ -1,5 +1,5 @@
 const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+const { sequelize } = require('../config/database');
 
 class Vehicle extends Model {}
 
@@ -9,14 +9,28 @@ Vehicle.init({
     primaryKey: true,
     autoIncrement: true
   },
-  companyId: {
-    type: DataTypes.INTEGER,
-    field: 'company_id',
+  userId: {
+    type: DataTypes.UUID,
+    field: 'user_id',
     allowNull: false,
     references: {
-      model: 'companies',
+      model: 'users',
       key: 'id'
     }
+  },
+  type: {
+    type: DataTypes.ENUM(
+      'truck',
+      'van',
+      'pickup',
+      'refrigerated',
+      'tanker',
+      'trailer',
+      'car',
+      'bus',
+      'trailer_head'
+    ),
+    allowNull: false
   },
   plateNumber: {
     type: DataTypes.STRING(20),
@@ -25,10 +39,12 @@ Vehicle.init({
     allowNull: false
   },
   make: {
-    type: DataTypes.STRING(50)
+    type: DataTypes.STRING(50),
+    allowNull: false
   },
   model: {
-    type: DataTypes.STRING(50)
+    type: DataTypes.STRING(50),
+    allowNull: false
   },
   year: {
     type: DataTypes.INTEGER,
@@ -38,15 +54,41 @@ Vehicle.init({
     }
   },
   vin: {
-    type: DataTypes.STRING(17),
+    type: DataTypes.STRING(50),
     unique: true,
     validate: {
-      len: [17, 17]
+      len: [1, 50]
     }
   },
+  registrationNumber: {
+    type: DataTypes.STRING(50),
+    field: 'registration_number'
+  },
+  registrationExpiry: {
+    type: DataTypes.DATE,
+    field: 'registration_expiry'
+  },
+  insuranceNumber: {
+    type: DataTypes.STRING(50),
+    field: 'insurance_number'
+  },
+  insuranceExpiry: {
+    type: DataTypes.DATE,
+    field: 'insurance_expiry'
+  },
   status: {
-    type: DataTypes.ENUM('active', 'maintenance', 'inactive'),
-    defaultValue: 'active'
+    type: DataTypes.ENUM(
+      'on_trip',        // في رحلة حالياً
+      'active',         // متصل ومتاح
+      'parked',         // متوقف في منطقة وقوف
+      'inactive',       // غير متصل
+      'maintenance',    // في الصيانة
+      'temp_inactive',  // موقوف مؤقتاً
+      'retired',        // خارج الخدمة نهائياً
+      'out_of_service', // خارج الخدمة
+      'reserved'        // محجوز
+    ),
+    defaultValue: 'inactive' // القيمة الافتراضية
   },
   lastMaintenanceDate: {
     type: DataTypes.DATE,
@@ -68,6 +110,25 @@ Vehicle.init({
     type: DataTypes.DECIMAL(6, 2),
     field: 'fuel_capacity'
   },
+  maxLoadWeight: {
+    type: DataTypes.DECIMAL(10, 2),
+    field: 'max_load_weight'
+  },
+  fuelTankCapacity: {
+    type: DataTypes.INTEGER,
+    field: 'fuel_tank_capacity'
+  },
+  currentOdometer: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  documents: {
+    type: DataTypes.JSONB,
+    defaultValue: '[]'
+  },
+  notes: {
+    type: DataTypes.TEXT
+  },
   specifications: {
     type: DataTypes.JSONB,
     defaultValue: {}
@@ -88,7 +149,7 @@ Vehicle.init({
   timestamps: true,
   indexes: [
     {
-      fields: ['company_id']
+      fields: ['user_id']
     },
     {
       fields: ['plate_number']
