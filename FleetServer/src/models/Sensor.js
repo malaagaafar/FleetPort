@@ -1,4 +1,4 @@
-const { Model, DataTypes } = require('sequelize');
+{/*const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 class SensorData extends Model {}
@@ -107,4 +107,4 @@ SensorData.init({
   ]
 });
 
-module.exports = SensorData;
+module.exports = SensorData;*/}

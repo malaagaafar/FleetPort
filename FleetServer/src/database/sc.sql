@@ -560,6 +560,20 @@ CREATE INDEX idx_inspections_vehicle ON vehicle_inspections(vehicle_id);
 
 -------------------------------------------------------------------
 -- Drivers
+CREATE TABLE independent_driver_accounts (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,    -- عادة رقم الهوية
+    password_hash VARCHAR(255) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    status account_status DEFAULT 'pending_review',
+    device_token VARCHAR(255),               -- للإشعارات
+    verification_code VARCHAR(6),            -- للتحقق من الهاتف/البريد
+    verification_expires_at TIMESTAMP WITH TIME ZONE,
+    last_login TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 -- أنواع السائقين
 CREATE TYPE driver_type AS ENUM (
     'company',         -- سائق تابع لشركة
@@ -590,20 +604,7 @@ CREATE TYPE license_type AS ENUM (
     'special'          -- تصريح خاص
 );
 -- جدول حسابات السائقين المستقلين
-CREATE TABLE independent_driver_accounts (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,    -- عادة رقم الهوية
-    password_hash VARCHAR(255) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    phone VARCHAR(20) NOT NULL,
-    status account_status DEFAULT 'pending_review',
-    device_token VARCHAR(255),               -- للإشعارات
-    verification_code VARCHAR(6),            -- للتحقق من الهاتف/البريد
-    verification_expires_at TIMESTAMP WITH TIME ZONE,
-    last_login TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+
 -- جدول السائقين
 CREATE TABLE drivers (
     id SERIAL PRIMARY KEY,

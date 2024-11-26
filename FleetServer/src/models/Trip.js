@@ -1,4 +1,4 @@
-const { Model, DataTypes } = require('sequelize');
+{/*const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 class Trip extends Model {}
@@ -135,4 +135,4 @@ Trip.init({
   ]
 });
 
-module.exports = Trip;
+module.exports = Trip;*/}

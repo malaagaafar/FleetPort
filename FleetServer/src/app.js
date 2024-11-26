@@ -21,6 +21,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/devices', require('./routes/deviceRoutes'));
 app.use('/api/purchase', require('./routes/purchaseRoutes'));
 app.use('/api/vehicles', require('./routes/vehicleRoutes'));
+app.use('/api/drivers', require('./routes/driverRoutes'));
 
 
 // Error handling middleware
