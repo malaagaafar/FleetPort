@@ -16,7 +16,7 @@ export default function SignUpScreen() {
     try {
       console.log('البيانات المرسلة:', formData);
 
-      const response = await fetch('http://919e-156-197-240-209.ngrok-free.app/api/auth/register', {
+      const response = await fetch('https://hookworm-primary-nicely.ngrok-free.app/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

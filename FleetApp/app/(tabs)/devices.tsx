@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { router } from 'expo-router';
@@ -41,6 +42,7 @@ export default function DevicesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isVehicleModalVisible, setIsVehicleModalVisible] = useState(false);
   const [isTrailerModalVisible, setIsTrailerModalVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState('Get Devices'); // الحالة لتتبع التبويب النشط
 
   const sensorTypes = ['All', 'Temperature', 'Door', 'Fuel', 'Weight', 'Camera'];
   const vehicleTypes = [
@@ -59,6 +61,7 @@ export default function DevicesScreen() {
     'Tanker',
     'Lowboy',
 ];;
+  
 
   const handleSearch = async () => {
     if (!vehicleType || !trailerType) {
@@ -88,6 +91,16 @@ export default function DevicesScreen() {
       console.error('Error fetching devices:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const renderContent = () => {
+    if (activeTab === 'Your Devices') {
+      return (
+        <View style={styles.noDataContainer}>
+          <Text>Your devices will be shown here</Text>
+        </View>
+      );
     }
   };
 
@@ -122,19 +135,36 @@ export default function DevicesScreen() {
     }
   }, [selectedSensorType]);
   
+  const renderTabs = () => (
+    <View style={styles.header}>
+    <View style={styles.tabsContainer}>
+    {['Get Devices', 'Your Devices'].map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]} // تمييز التبويب النشط
+              onPress={() => setActiveTab(tab)} // تحديث الحالة عند الضغط
+            >
+              <Text style={[styles.tabText, activeTab === tab ? styles.activeTabText : styles.inactiveTabText]}>{tab}</Text>
+            </TouchableOpacity>
+          ))}
+          </View>
+          </View>
+  );
+
   const renderHeader = () => (
     <View style={styles.header}>
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search"
-          placeholderTextColor="#666"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
-
+    <View style={styles.tabsContainer}>
+    {['Get Devices', 'Your Devices'].map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]} // تمييز التبويب النشط
+              onPress={() => setActiveTab(tab)} // تحديث الحالة عند الضغط
+            >
+              <Text style={[styles.tabText, activeTab === tab ? styles.activeTabText : styles.inactiveTabText]}>{tab}</Text>
+            </TouchableOpacity>
+          ))}
+          </View>
+      <View style={styles.subheader}>
       <View style={styles.typeSelectors}>
         <View style={styles.selectorContainer}>
           <Text style={styles.selectorLabel}>Vehicle Type</Text>
@@ -197,6 +227,7 @@ export default function DevicesScreen() {
         onSelect={setTrailerType}
         title="Select Trailer Type"
       />
+    </View>
     </View>
   );
 
@@ -336,24 +367,31 @@ export default function DevicesScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      {renderHeader()}
-      {loading && (
+      <StatusBar barStyle='default' backgroundColor="#000" />
+      {(activeTab=== 'Your Devices') && (
+        <View style={styles.header}>
+          {renderTabs()}
+          {renderContent()}
+        </View>
+      )}
+      {(activeTab=== 'Get Devices') && renderHeader()}
+      {(activeTab=== 'Get Devices') && loading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0066CC" />
         </View>
       )}
-      {error && (
+      {(activeTab=== 'Get Devices') && error && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
-      {!loading && !error && (primaryDevices.length > 0 || sensors.length > 0) && (
+      {(activeTab=== 'Get Devices') && !loading && !error && (primaryDevices.length > 0 || sensors.length > 0) && (
         <View style={styles.devicesContainer}>
           {renderPrimaryDevices()}
           {renderSensorsSection()}
         </View>
       )}
-      {!vehicleType || !trailerType && !loading && !error && primaryDevices.length === 0 && sensors.length === 0 && (
+      {(activeTab === 'Get Devices') && (!vehicleType || !trailerType) && !loading && !error && primaryDevices.length === 0 && sensors.length === 0 && (
         <View style={styles.noDataContainer}>
           <Text>Select Vehicle and Trailer Type</Text>
         </View>
@@ -363,15 +401,48 @@ export default function DevicesScreen() {
 }
 
 const styles = StyleSheet.create({
-  devicesContainer: {
-    flex: 1,
-    padding: 10,
-  },
   noDataContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between', // توزيع علامات التبويب بالتساوي
+    width: '100%',
+    backgroundColor: '#fff', // لون خلفية علامات التبويب
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc', // لون الحدود السفلية
+    borderTopWidth: 1,
+    borderTopColor: '#ccc', // لون الحدود السفلية
+    //margin: 0, // إزالة الهوامش
+    //padding: 0, // إزالة الحشو
+    
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 10,
+  },
+  activeTab: {
+    backgroundColor: '#000', // لون خلفية التبويب النشط
+  },
+  inactiveTab: {
+    backgroundColor: '#fff', // لون خلفية التبويب غير النشط
+  },
+  tabText: {
+    fontSize: 16,
+  },
+  activeTabText: {
+    color: '#fff', // لون النص للتبويب النشط
+  },
+  inactiveTabText: {
+    color: '#000', // لون النص للتبويب غير النشط
+  },
+  devicesContainer: {
+    flex: 1,
+    padding: 10,
   },
   loadingContainer: {
     padding: 20,
@@ -392,7 +463,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
+    padding: 0,
+    margin: 0, // تأكد من عدم وجود هوامش
+
+  },
+  subheader: {
     padding: 15,
+    margin: 0, // تأكد من عدم وجود هوامش
+
   },
   searchContainer: {
     flexDirection: 'row',
@@ -411,7 +489,9 @@ const styles = StyleSheet.create({
   typeSelectors: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 15,
+    marginTop: 5,
+
   },
   selectorContainer: {
     flex: 1,
@@ -530,5 +610,15 @@ const styles = StyleSheet.create({
   sensorsSection: {
     paddingHorizontal: 0,
     marginTop: 10,
+  },
+  button: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: '#007BFF', // لون الخلفية
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: '#fff', // لون النص
+    fontSize: 16,
   },
 });
