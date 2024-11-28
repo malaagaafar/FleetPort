@@ -291,9 +291,6 @@ CREATE TABLE primary_devices (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
--- إضافة الأعمدة الجديدة إلى جدول primary_devices
-ALTER TABLE primary_devices
-ADD COLUMN trailer_type trailer_type[];
 -- كتالوج المستشعرات
 CREATE TABLE sensors (
     id SERIAL PRIMARY KEY,
@@ -307,8 +304,20 @@ CREATE TABLE sensors (
     installation_fee DECIMAL(10,2),
     image_url VARCHAR(255),
     is_active BOOLEAN DEFAULT true,
+    stock integer;
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE serial_devices (
+    device_id INTEGER REFERENCES primary_devices(id),
+    serial_number VARCHAR(50) UNIQUE NOT NULL,
+    avilable BOOLEAN DEFAULT true,
+);
+
+CREATE TABLE serial_sensors (
+    sensor_id INTEGER REFERENCES sensors(id),
+    serial_number VARCHAR(50) UNIQUE NOT NULL,
+    avilable BOOLEAN DEFAULT true,
 );
 -- الأجهزة المشتراة
 CREATE TABLE purchases (
@@ -320,32 +329,22 @@ CREATE TABLE purchases (
     FOREIGN KEY (user_id) REFERENCES users(id)  -- Assuming there is a 'users' table with an 'id' column
 );
 
-CREATE TABLE purchased_primary_devices (
+CREATE TABLE purchased_devices (
     id SERIAL PRIMARY KEY,
+    order_id UUID REFERENCES purchses(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     device_id INTEGER REFERENCES primary_devices(id),
     serial_number VARCHAR(50) UNIQUE NOT NULL,
-    imei VARCHAR(50) UNIQUE NOT NULL,
-    phone_number VARCHAR(20),
-    status device_status DEFAULT 'new',
-    warranty_start DATE,
-    warranty_end DATE,
-    notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 -- المستشعرات المشتراة
 CREATE TABLE purchased_sensors (
     id SERIAL PRIMARY KEY,
+    order_id UUID REFERENCES purchses(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     sensor_id INTEGER REFERENCES sensors(id),
     serial_number VARCHAR(50) UNIQUE NOT NULL,
-    status device_status DEFAULT 'new',
-    warranty_start DATE,
-    warranty_end DATE,
-    notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- تعديل جدول تعيين الأجهزة

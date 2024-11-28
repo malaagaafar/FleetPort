@@ -159,5 +159,8 @@ Vehicle.init({
     }
   ]
 });
+(async () => {
+  await sequelize.sync();
+})();
 
 module.exports = Vehicle;

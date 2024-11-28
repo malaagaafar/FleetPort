@@ -24,7 +24,8 @@ class DeviceCatalogService {
                     description,
                     specifications,
                     installation_fee as "installationFee",
-                    is_active as "isActive"
+                    is_active as "isActive",
+                    category
                 FROM ${category === 'primary_devices' ? 'primary_devices' : 'sensors'}
                 WHERE is_active = true 
                 AND type = '${type}'
@@ -43,7 +44,8 @@ class DeviceCatalogService {
                     description,
                     specifications,
                     installation_fee as "installationFee",
-                    is_active as "isActive"
+                    is_active as "isActive",
+                    category
                 FROM ${category === 'primary_devices' ? 'primary_devices' : 'sensors'}
                 WHERE is_active = true 
                 AND type = '${type}'`; // استخدام template literals
@@ -60,7 +62,8 @@ class DeviceCatalogService {
                     description,
                     specifications,
                     installation_fee as "installationFee",
-                    is_active as "isActive"
+                    is_active as "isActive",
+                    category
                 FROM ${category === 'primary_devices' ? 'primary_devices' : 'sensors'}
                 WHERE is_active = true 
                 `;

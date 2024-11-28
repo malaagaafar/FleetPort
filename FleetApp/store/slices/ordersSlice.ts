@@ -14,6 +14,8 @@ export interface Order {
   total: number;
   date: string;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  updated_at: string,
+  created_at: string,
 }
 
 interface OrdersState {

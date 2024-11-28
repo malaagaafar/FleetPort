@@ -256,7 +256,8 @@ export default function DevicesScreen() {
             name: device.name,
             price: device.price,
             image: { uri: device.imageUrl },
-            quantity: 1
+            quantity: 1,
+            category: device.category
           }))}
         >
           <Ionicons name="cart-outline" size={24} color="#0066CC" />

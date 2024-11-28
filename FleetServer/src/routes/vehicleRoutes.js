@@ -4,8 +4,7 @@ const vehicleController = require('../controllers/vehicleController');
 //const auth = require('../middleware/auth');
 
 //router.use(auth);
-
-//router.get('/', vehicleController.getAllVehicles);
+router.get('/', vehicleController.getAllVehicles);
 //router.get('/:id', vehicleController.getVehicle);
 router.post('/', vehicleController.createVehicle);
 //router.put('/:id', vehicleController.updateVehicle);
