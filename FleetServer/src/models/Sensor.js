@@ -1,110 +1,69 @@
-{/*const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+const { Model, DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-class SensorData extends Model {}
+class Sensor extends Model {}
 
-SensorData.init({
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  companyId: {
-    type: DataTypes.INTEGER,
-    field: 'company_id',
-    allowNull: false,
-    references: {
-      model: 'companies',
-      key: 'id'
-    }
-  },
-  vehicleId: {
-    type: DataTypes.INTEGER,
-    field: 'vehicle_id',
-    allowNull: false,
-    references: {
-      model: 'vehicles',
-      key: 'id'
-    }
-  },
-  tripId: {
-    type: DataTypes.INTEGER,
-    field: 'trip_id',
-    references: {
-      model: 'trips',
-      key: 'id'
-    }
-  },
-  timestamp: {
-    type: DataTypes.DATE,
-    allowNull: false
-  },
-  location: {
-    type: DataTypes.GEOMETRY('POINT')
-  },
-  speed: {
-    type: DataTypes.DECIMAL(5, 2)
-  },
-  acceleration: {
-    type: DataTypes.DECIMAL(5, 2)
-  },
-  engineRpm: {
-    type: DataTypes.INTEGER,
-    field: 'engine_rpm'
-  },
-  engineTemp: {
-    type: DataTypes.DECIMAL(5, 2),
-    field: 'engine_temp'
-  },
-  fuelLevel: {
-    type: DataTypes.DECIMAL(5, 2),
-    field: 'fuel_level'
-  },
-  batteryVoltage: {
-    type: DataTypes.DECIMAL(5, 2),
-    field: 'battery_voltage'
-  },
-  tirePressure: {
-    type: DataTypes.JSONB,
-    field: 'tire_pressure'
-  },
-  oilPressure: {
-    type: DataTypes.DECIMAL(5, 2),
-    field: 'oil_pressure'
-  },
-  diagnosticCodes: {
-    type: DataTypes.JSONB,
-    field: 'diagnostic_codes'
-  },
-  data: {
-    type: DataTypes.JSONB,
-    defaultValue: {}
-  },
-  createdAt: {
-    type: DataTypes.DATE,
-    field: 'created_at',
-    defaultValue: DataTypes.NOW
-  }
+Sensor.init({
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    },
+    name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    type: {
+        type: DataTypes.ENUM('sensorType1', 'sensorType2'), // استبدل بالقيم المناسبة
+        allowNull: false,
+    },
+    model: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    manufacturer: {
+        type: DataTypes.STRING,
+    },
+    description: {
+        type: DataTypes.TEXT,
+    },
+    specifications: {
+        type: DataTypes.JSONB,
+        defaultValue: {},
+    },
+    price: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+    },
+    installation_fee: {
+        type: DataTypes.DECIMAL(10, 2),
+    },
+    image_url: {
+        type: DataTypes.STRING,
+    },
+    is_active: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true,
+    },
+    stock: {
+        type: DataTypes.INTEGER,
+    },
+    created_at: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+    },
+    updated_at: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+    },
+    category: {
+        type: DataTypes.STRING,
+        defaultValue: 'sensor',
+    },
 }, {
-  sequelize,
-  modelName: 'SensorData',
-  tableName: 'sensor_data',
-  timestamps: true,
-  updatedAt: false,
-  indexes: [
-    {
-      fields: ['company_id']
-    },
-    {
-      fields: ['vehicle_id']
-    },
-    {
-      fields: ['trip_id']
-    },
-    {
-      fields: ['timestamp']
-    }
-  ]
+    sequelize,
+    modelName: 'Sensor',
+    tableName: 'sensors',
 });
 
-module.exports = SensorData;*/}
+module.exports = Sensor;

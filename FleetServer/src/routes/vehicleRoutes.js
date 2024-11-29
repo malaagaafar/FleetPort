@@ -7,6 +7,7 @@ const vehicleController = require('../controllers/vehicleController');
 router.get('/', vehicleController.getAllVehicles);
 //router.get('/:id', vehicleController.getVehicle);
 router.post('/', vehicleController.createVehicle);
+router.get('/available-for-device', vehicleController.getAvailableVehiclesForDevice);
 //router.put('/:id', vehicleController.updateVehicle);
 //router.delete('/:id', vehicleController.deleteVehicle);
 //router.get('/:id/location', vehicleController.getVehicleLocation);

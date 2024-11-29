@@ -4,7 +4,17 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { Provider } from 'react-redux';
 import { store } from '../store/store';
-import { StripeProvider } from '@stripe/stripe-react-native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // البيانات تبقى صالحة لمدة 5 دقائق
+      cacheTime: 10 * 60 * 1000, // تبقى في الذاكرة لمدة 10 دقائق
+    },
+  },
+});
+
 
 SplashScreen.preventAutoHideAsync();
 
@@ -24,15 +34,14 @@ export default function RootLayout() {
   }
 
   return (
+    <QueryClientProvider client={queryClient}>
     <Provider store={store}>
-      <StripeProvider
-        publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}
-        urlScheme="your-url-scheme">
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
         </Stack>
-      </StripeProvider>
     </Provider>
+    </QueryClientProvider>
+
   );
 }

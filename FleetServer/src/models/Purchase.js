@@ -74,6 +74,10 @@ PurchasedDevice.init({
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
     },
+    assigned: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
 }, {
     sequelize,
     modelName: 'PurchasedDevice',
@@ -157,6 +161,10 @@ PurchasedSensor.init({
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
     },
+    assigned: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
 }, {
     sequelize,
     modelName: 'PurchasedSensor',
@@ -164,11 +172,10 @@ PurchasedSensor.init({
 
 });
 
-// في ملف النماذج
-//Purchase.hasMany(PurchasedDevice, { foreignKey: 'order_id' });
-//Purchase.hasMany(PurchasedSensor, { foreignKey: 'order_id' });
-//PurchasedDevice.belongsTo(Purchase, { foreignKey: 'order_id' });
-//PurchasedSensor.belongsTo(Purchase, { foreignKey: 'order_id' });
-//SerialDevice.belongsTo(PurchasedDevice, { foreignKey: 'device_id' });
-
-module.exports = { Purchase, PurchasedDevice, SerialDevice, SerialSensors, PurchasedSensor };
+module.exports = {
+    Purchase,
+    PurchasedDevice,
+    PurchasedSensor,
+    SerialDevice,
+    SerialSensors
+};

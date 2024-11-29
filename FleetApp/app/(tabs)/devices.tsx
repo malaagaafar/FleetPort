@@ -10,12 +10,15 @@ import {
   ActivityIndicator,
   StatusBar,
 } from 'react-native';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { router } from 'expo-router';
 import api from '../../config/api';
 import { addToCart } from '../../store/slices/cartSlice';
 import { Ionicons } from '@expo/vector-icons';
 import { TypeSelectorModal } from '../../components/TypeSelectorModal';
+import { RootState } from '@/store/store';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
 
 interface Device {
   id: number;
@@ -61,7 +64,309 @@ export default function DevicesScreen() {
     'Tanker',
     'Lowboy',
 ];;
+
+
+  const userId = useSelector((state: RootState) => state.auth.user?.id);
+  const queryClient = useQueryClient();
   
+    const { 
+      data: purchasedDevices = [], 
+      isLoading: devicesLoading,
+      error: devicesError
+    } = useQuery({
+      queryKey: ['purchasedDevices', userId],
+      queryFn: async () => {
+        const response = await api.get('/purchase/purchased-devices', { 
+          params: { userId } 
+        });
+        return Array.isArray(response.data?.data) ? 
+          response.data.data : 
+          (response.data?.data ? [response.data.data] : []);
+      },
+      enabled: activeTab === 'Your Devices' && !!userId,
+      staleTime: 30000, // البيانات تبقى صالحة لمدة 30 ثانية
+      cacheTime: 5 * 60 * 1000, // تبقى في الذاكرة لمدة 5 دقائق
+      refetchOnWindowFocus: false, // لا تعيد الطلب عند التركيز على النافذة
+      refetchOnMount: false, // لا تعيد الطلب عند تركيب المكون
+    });
+  
+    const { 
+      data: purchasedSensors = [], 
+      isLoading: sensorsLoading,
+      error: sensorsError
+    } = useQuery({
+      queryKey: ['purchasedSensors', userId],
+      queryFn: async () => {
+        const response = await api.get('/purchase/purchased-sensors', { 
+          params: { userId } 
+        });
+        return Array.isArray(response.data?.data) ? 
+          response.data.data : 
+          (response.data?.data ? [response.data.data] : []);
+      },
+      enabled: activeTab === 'Your Devices' && !!userId,
+      staleTime: 30000,
+      cacheTime: 5 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+    });
+  
+    // نحذف useEffect لأن enabled في useQuery سيتحكم في توقيت جلب البيانات
+  
+    const handleRefresh = () => {
+      if (activeTab === 'Your Devices' && userId) {
+        queryClient.invalidateQueries({ queryKey: ['purchasedDevices', userId] });
+        queryClient.invalidateQueries({ queryKey: ['purchasedSensors', userId] });
+      }
+    };
+
+const renderTabs = () => (
+  <View style={styles.header}>
+      <View style={styles.tabsContainer}>
+          {['Get Devices', 'Your Devices'].map((tab) => (
+              <TouchableOpacity
+                  key={tab}
+                  style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]}
+                  onPress={() => {
+                      console.log('Tab pressed:', tab);
+                      setActiveTab(tab);
+                  }}
+              >
+                  <Text style={[
+                      styles.tabText, 
+                      activeTab === tab ? styles.activeTabText : styles.inactiveTabText
+                  ]}>
+                      {tab}
+                  </Text>
+              </TouchableOpacity>
+          ))}
+      </View>
+  </View>
+);
+
+const fetchPurchasedItems = async () => {
+  try {
+      setLoading(true);
+      console.log('Making API calls...');
+
+      const [devicesResponse, sensorsResponse] = await Promise.all([
+          api.get('/purchase/purchased-devices', { 
+              params: { userId }
+          }),
+          api.get('/purchase/purchased-sensors', { 
+              params: { userId }
+          })
+      ]);
+
+      // تصحيح تنسيق البيانات - نأخذ المصفوفة الأولى فقط إذا كانت موجودة
+      const devices = Array.isArray(devicesResponse.data?.data) ? 
+          devicesResponse.data.data : 
+          (devicesResponse.data?.data ? [devicesResponse.data.data] : []);
+
+      const sensors = Array.isArray(sensorsResponse.data?.data) ? 
+          sensorsResponse.data.data : 
+          (sensorsResponse.data?.data ? [sensorsResponse.data.data] : []);
+
+      //setPurchasedDevices(devices);
+      //setPurchasedSensors(sensors);
+
+  } catch (err: any) {
+      console.error('API Error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'حدث خطأ في جلب البيانات');
+  } finally {
+      setLoading(false);
+  }
+};
+
+const renderPurchasedDeviceCard = (device: any) => {
+  const uniqueKey = `device-${device.id}-${device.first_purchase_date}`;
+  
+  return (
+    <TouchableOpacity
+      key={uniqueKey}
+      style={styles.deviceCard}
+    >
+      <Image
+        source={{ uri: device.image_url }}
+        style={styles.deviceImage}
+        resizeMode="cover"
+      />
+      <View style={styles.deviceInfo}>
+        <Text style={styles.deviceName}>{device.name}</Text>
+        <Text style={styles.deviceDetails}>
+          {device.manufacturer} - {device.model}
+        </Text>
+        <View style={styles.serialNumberContainer}>
+          <Text style={styles.serialLabel}>الرقم التسلسلي:</Text>
+          <Text style={styles.serialNumber}>{device.serial_number}</Text>
+        </View>
+        <View style={styles.assignmentInfo}>
+          <Text style={styles.assignmentStatus}>
+            الحالة: {device.assigned_to_vehicle ? 'مرتبط' : 'غير مرتبط'}
+          </Text>
+          {device.assigned_to_vehicle && device.vehicle_plate_number && (
+            <Text style={styles.assignedDevice}>
+              مرتبط بالمركبة: {device.vehicle_plate_number}
+            </Text>
+          )}
+          {!device.assigned_to_vehicle && (
+            <TouchableOpacity
+              style={styles.assignButton}
+              onPress={() => router.push({
+                pathname: '/assign/DeviceAssign',
+                params: {
+                  deviceSerial: device.serial_number,
+                  deviceType: device.type
+                }
+              })}
+            >
+              <Text style={styles.assignButtonText}>ربط بمركبة</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <View style={styles.typeContainer}>
+          <Text style={styles.typeText}>
+            {device.type}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const renderPurchasedSensorCard = (sensor: any) => {
+  // نفترض أن كل مستشعر له رقم تسلسلي واحد الآن
+  const uniqueKey = `sensor-${sensor.id}-${sensor.first_purchase_date}-${sensor.serial_number}`;
+  
+  return (
+    <TouchableOpacity
+      key={uniqueKey}
+      style={styles.deviceCard}
+    >
+      <Image
+        source={{ uri: sensor.image_url }}
+        style={styles.deviceImage}
+        resizeMode="cover"
+      />
+      <View style={styles.deviceInfo}>
+        <Text style={styles.deviceName}>{sensor.name}</Text>
+        <Text style={styles.deviceDetails}>
+          {sensor.manufacturer} - {sensor.model}
+        </Text>
+        <View style={styles.serialNumberContainer}>
+          <Text style={styles.serialLabel}>الرقم التسلسلي:</Text>
+          <Text style={styles.serialNumber}>{sensor.serial_number}</Text>
+        </View>
+        <View style={styles.assignmentInfo}>
+          <Text style={styles.assignmentStatus}>
+            الحالة: {sensor.assigned ? 'مرتبط' : 'غير مرتبط'}
+          </Text>
+          {sensor.assigned && sensor.device_serial_number && (
+            <Text style={styles.assignedDevice}>
+              مرتبط بالجهاز: {sensor.device_serial_number}
+            </Text>
+          )}
+          {!sensor.assigned && (
+            <TouchableOpacity
+              style={styles.assignButton}
+              onPress={() => router.push({
+                pathname: '/assign/SensorAssign',
+                params: {
+                  sensorSerial: sensor.serial_number,
+                  sensorType: sensor.type
+                }
+              })}
+            >
+              <Text style={styles.assignButtonText}>ربط بجهاز</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <View style={styles.typeContainer}>
+          <Text style={styles.typeText}>
+            {sensor.type}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const renderContent = () => {
+  if (activeTab === 'Your Devices') {
+    if (devicesLoading || sensorsLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0066CC" />
+          <Text style={styles.loadingText}>جاري تحميل الأجهزة...</Text>
+        </View>
+      );
+    }
+
+    if (devicesError || sensorsError) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>
+            {devicesError?.message || sensorsError?.message || 'حدث خطأ في جلب البيانات'}
+          </Text>
+          <TouchableOpacity 
+            style={styles.retryButton} 
+            onPress={() => {
+              queryClient.invalidateQueries(['purchasedDevices', userId]);
+              queryClient.invalidateQueries(['purchasedSensors', userId]);
+            }}
+          >
+            <Text style={styles.retryButtonText}>إعادة المحاولة</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    const hasDevices = purchasedDevices.length > 0;
+    const hasSensors = purchasedSensors.length > 0;
+
+    if (!hasDevices && !hasSensors) {
+      return (
+        <View style={styles.noDataContainer}>
+          <Text style={styles.noDataText}>لا توجد أجهزة أو مستشعرات مشتراة</Text>
+        </View>
+      );
+    }
+
+    return (
+      // تحديث renderContent لاستخدام الدالتين الجديدتين
+      <ScrollView style={styles.devicesContainer}>
+        {hasDevices && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>الأجهزة المشتراة</Text>
+            <View style={styles.devicesGrid}>
+              {purchasedDevices.map(device => renderPurchasedDeviceCard(device))}
+            </View>
+          </View>
+        )}
+        
+        {hasSensors && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>المستشعرات المشتراة</Text>
+            <View style={styles.devicesGrid}>
+              {purchasedSensors.map(sensor => renderPurchasedSensorCard(sensor))}
+            </View>
+          </View>
+        )}
+      </ScrollView>
+    );
+  }
+  return null;
+};
+
+  // تعديل معالج تغيير التبويب
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (tab === 'Your Devices') {
+      fetchPurchasedItems();
+    }
+  };
+
+
 
   const handleSearch = async () => {
     if (!vehicleType || !trailerType) {
@@ -94,15 +399,6 @@ export default function DevicesScreen() {
     }
   };
 
-  const renderContent = () => {
-    if (activeTab === 'Your Devices') {
-      return (
-        <View style={styles.noDataContainer}>
-          <Text>Your devices will be shown here</Text>
-        </View>
-      );
-    }
-  };
 
   const fetchSensors = async () => {
     try {
@@ -134,22 +430,6 @@ export default function DevicesScreen() {
       fetchSensors();
     }
   }, [selectedSensorType]);
-  
-  const renderTabs = () => (
-    <View style={styles.header}>
-    <View style={styles.tabsContainer}>
-    {['Get Devices', 'Your Devices'].map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]} // تمييز التبويب النشط
-              onPress={() => setActiveTab(tab)} // تحديث الحالة عند الضغط
-            >
-              <Text style={[styles.tabText, activeTab === tab ? styles.activeTabText : styles.inactiveTabText]}>{tab}</Text>
-            </TouchableOpacity>
-          ))}
-          </View>
-          </View>
-  );
 
   const renderHeader = () => (
     <View style={styles.header}>
@@ -622,4 +902,119 @@ const styles = StyleSheet.create({
     color: '#fff', // لون النص
     fontSize: 16,
   },
+  deviceInfo: {
+    padding: 10,
+},
+deviceDetails: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+},
+typeContainer: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+},
+typeText: {
+    fontSize: 12,
+    color: '#444',
+},
+section: {
+    marginBottom: 20,
+},
+
+  loadingText: {
+      marginTop: 10,
+      fontSize: 16,
+      color: '#666',
+      textAlign: 'center',
+  },
+  retryButton: {
+      backgroundColor: '#0066CC',
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 8,
+  },
+  retryButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+  },
+  noDataText: {
+      fontSize: 16,
+      color: '#666',
+      textAlign: 'center',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 16,
+  },
+  list: {
+    paddingVertical: 8,
+  },
+  deviceItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  deviceSerial: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  serialNumberContainer: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 4,
+  },
+  serialLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  serialNumber: {
+    fontSize: 14,
+    color: '#0066CC',
+    marginTop: 4,
+  },
+  assignmentInfo: {
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: '#f0f7ff',
+    borderRadius: 4,
+  },
+  assignmentStatus: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'right',
+  },
+  assignedDevice: {
+    fontSize: 14,
+    color: '#0066CC',
+    marginTop: 4,
+    textAlign: 'right',
+  },
+  assignButton: {
+    backgroundColor: '#0066CC',
+    padding: 8,
+    borderRadius: 4,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  assignButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // ... باقي الأنماط ...
 });
