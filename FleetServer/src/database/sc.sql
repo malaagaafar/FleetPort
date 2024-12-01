@@ -289,7 +289,8 @@ CREATE TABLE primary_devices (
     installation_guide_url VARCHAR(255),
     installation_video_url VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    category varchar(50) default 'device'
 );
 -- كتالوج المستشعرات
 CREATE TABLE sensors (
@@ -306,7 +307,9 @@ CREATE TABLE sensors (
     is_active BOOLEAN DEFAULT true,
     stock integer;
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    category varchar(50) default 'sensor'
+
 );
 CREATE TABLE serial_devices (
     device_id INTEGER REFERENCES primary_devices(id),
@@ -335,6 +338,7 @@ CREATE TABLE purchased_devices (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     device_id INTEGER REFERENCES primary_devices(id),
     serial_number VARCHAR(50) UNIQUE NOT NULL,
+    assigned boolean DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 -- المستشعرات المشتراة
@@ -344,11 +348,12 @@ CREATE TABLE purchased_sensors (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     sensor_id INTEGER REFERENCES sensors(id),
     serial_number VARCHAR(50) UNIQUE NOT NULL,
+    assigned boolean DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- تعديل جدول تعيين الأجهزة
-CREATE TABLE device_vehicle_assignments (
+/*CREATE TABLE device_vehicle_assignments (
     id SERIAL PRIMARY KEY,
     device_id INTEGER REFERENCES purchased_primary_devices(id),
     vehicle_id INTEGER REFERENCES vehicles(id),
@@ -358,6 +363,14 @@ CREATE TABLE device_vehicle_assignments (
     first_data_received_at TIMESTAMP WITH TIME ZONE,    -- وقت استلام أول بيانات
     last_connection TIMESTAMP WITH TIME ZONE,           -- آخر اتصال
     deactivated_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);*/
+
+CREATE TABLE device_vehicle_assignments (
+    id SERIAL PRIMARY KEY,
+    device_serial_number VARCHAR(50) REFERENCES purchased_devices(serial_number),
+    vehicle_id INTEGER REFERENCES vehicles(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -371,7 +384,7 @@ CREATE TABLE installation_notifications (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 -- تعيين المستشعرات للأجهزة (النسخة المبسطة)
-CREATE TABLE sensor_device_assignments (
+/*CREATE TABLE sensor_device_assignments (
     id SERIAL PRIMARY KEY,
     sensor_id INTEGER REFERENCES purchased_sensors(id),
     device_assignment_id INTEGER REFERENCES device_vehicle_assignments(id),
@@ -379,6 +392,14 @@ CREATE TABLE sensor_device_assignments (
     attribute_key VARCHAR(50) NOT NULL,      -- المفتاح في Traccar (مثل: temp1)
     description TEXT,                        -- وصف موقع/وظيفة المستشعر
     status assignment_status DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);*/
+
+CREATE TABLE sensor_device_assignments (
+    id SERIAL PRIMARY KEY,
+    sensor_serial_number VARCHAR(50) REFERENCES purchased_sensors(serial_number),
+    device_serial_number VARCHAR(50) REFERENCES purchased_devices(serial_number),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

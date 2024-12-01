@@ -6,6 +6,8 @@ const User = require('./models/User'); // تأكد من استيراد النم�
 const authRoutes = require('./routes/authRoutes');
 const deviceRoutes = require('./routes/deviceRoutes');
 const webhookRoutes = require('./routes/webhook.routes');
+const purchaseRoutes = require('./routes/purchaseRoutes');
+
 
 
 
@@ -22,6 +24,9 @@ app.use('/api/devices', require('./routes/deviceRoutes'));
 app.use('/api/purchase', require('./routes/purchaseRoutes'));
 app.use('/api/vehicles', require('./routes/vehicleRoutes'));
 app.use('/api/drivers', require('./routes/driverRoutes'));
+// ... existing code ...
+app.use('/api/purchase', purchaseRoutes);
+// ... existing code ...
 
 
 // Error handling middleware

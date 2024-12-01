@@ -89,7 +89,7 @@ export default function AssignDeviceScreen() {
       style={styles.vehicleItem}
       onPress={() => handleAssign(item.id)}
     >
-      <Text style={styles.vehicleName}>{item.make} {item.model}</Text>
+      <Text style={styles.vehicleName}>{item.name} - {item.make} {item.model}</Text>
       <Text style={styles.vehicleDetails}>سنة الصنع: {item.year}</Text>
       <Text style={styles.plateNumber}>رقم اللوحة: {item.plate_number}</Text>
       <Text style={styles.vehicleType}>النوع: {item.type}</Text>

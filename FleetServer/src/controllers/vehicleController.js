@@ -29,73 +29,75 @@ const getAllVehicles = async (req, res) => {
 };
 
 const getAvailableVehiclesForDevice = async (req, res) => {
-    try {
-        const { userId, deviceType } = req.query;
-        
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: 'يجب توفير معرف المستخدم'
-            });
-        }
-
-        // التحقق أولاً من وجود مركبات للمستخدم
-        const hasVehicles = await Vehicle.count({
-            where: {
-                user_id: userId
-            }
-        });
-
-        if (hasVehicles === 0) {
-            return res.json({
-                success: true,
-                vehicles: [],
-                message: 'لا توجد مركبات مضافة لهذا المستخدم'
-            });
-        }
-
-        // استعلام للحصول على المركبات المتاحة
-        const query = `
-            SELECT 
-                v.id,
-                v.make,
-                v.model,
-                v.year,
-                v.plate_number,
-                v.type,
-                v.status
-            FROM vehicles v
-            WHERE v.user_id = :userId AND v.type = :deviceType
-            AND v.status = 'active'
-            AND NOT EXISTS (
-                SELECT 1 
-                FROM device_vehicle_assignments dva
-                WHERE dva.vehicle_id = v.id
-            )
-            ORDER BY v.created_at DESC
-        `;
-
-        const availableVehicles = await sequelize.query(query, {
-            replacements: { userId, deviceType },
-            type: sequelize.QueryTypes.SELECT
-        });
-
-        return res.json({
-            success: true,
-            vehicles: availableVehicles,
-            message: availableVehicles.length === 0 ? 
-                'لا توجد مركبات متاحة للربط' : 
-                `تم العثور على ${availableVehicles.length} مركبة متاحة`
-        });
-
-    } catch (error) {
-        console.error('Error fetching available vehicles:', error);
-        return res.status(500).json({
+  try {
+    const { userId, deviceType } = req.query;
+    
+    if (!userId) {
+        return res.status(400).json({
             success: false,
-            message: 'حدث خطأ أثناء جلب المركبات المتاحة',
-            error: error.message
+            message: 'User ID must be provided.'
         });
     }
+
+    // Check if the user has any vehicles
+    const hasVehicles = await Vehicle.count({
+        where: {
+            user_id: userId
+        }
+    });
+
+    if (hasVehicles === 0) {
+        return res.json({
+            success: true,
+            vehicles: [],
+            message: 'No vehicles added for this user.'
+        });
+    }
+
+    // Query to fetch available vehicles, including the 'name' field
+    const query = `
+        SELECT 
+            v.id,
+            v.name,         
+            v.make,
+            v.model,
+            v.year,
+            v.plate_number,
+            v.type,
+            v.status
+        FROM vehicles v
+        WHERE v.user_id = :userId 
+          AND v.type = :deviceType
+          AND v.status = 'active'
+          AND NOT EXISTS (
+              SELECT 1 
+              FROM device_vehicle_assignments dva
+              WHERE dva.vehicle_id = v.id
+          )
+        ORDER BY v.created_at DESC
+    `;
+
+    const availableVehicles = await sequelize.query(query, {
+        replacements: { userId, deviceType },
+        type: sequelize.QueryTypes.SELECT
+    });
+
+    return res.json({
+        success: true,
+        vehicles: availableVehicles,
+        message: availableVehicles.length === 0 ? 
+            'No vehicles available for assignment.' : 
+            `${availableVehicles.length} available vehicle(s) found.`
+    });
+
+  } catch (error) {
+      console.error('Error fetching available vehicles:', error);
+      return res.status(500).json({
+          success: false,
+          message: 'An error occurred while fetching available vehicles.',
+          error: error.message
+      });
+  }
 };
 
 module.exports = {

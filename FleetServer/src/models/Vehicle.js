@@ -141,7 +141,16 @@ Vehicle.init({
   updatedAt: {
     type: DataTypes.DATE,
     field: 'updated_at'
-  }
+  },
+  name: {
+    type: DataTypes.STRING(50), // تغيير الحجم من 255 إلى 50
+    allowNull: false,
+  },
+  vehicleImage: { // إضافة حقل الصورة
+    type: DataTypes.STRING, // أو DataTypes.TEXT حسب الحاجة
+    field: 'vehicle_image',
+    defaultValue: 'https://imgur.com/a/Xjh110o' // قيمة افتراضية إذا لزم الأمر
+  },
 }, {
   sequelize,
   modelName: 'Vehicle',
@@ -156,6 +165,10 @@ Vehicle.init({
     },
     {
       fields: ['status']
+    },
+    {
+      unique: true,
+      fields: ['user_id', 'name']
     }
   ]
 });

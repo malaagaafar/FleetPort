@@ -1,6 +1,6 @@
 const purchaseService = require('../services/purchaseService');
 // دالة لمعالجة عملية الشراء
-const handlePurchase = async (req, res) => {
+/*const handlePurchase = async (req, res) => {
     const { id, items, total, date, userId } = req.body; // استلام البيانات الجديدة
 
     try {
@@ -11,9 +11,20 @@ const handlePurchase = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
-};
+};*/
 
 const { sequelize } = require('../config/database');
+
+const handlePurchase = async (req, res) => {
+    const { id, items, total, date, userId } = req.body;
+
+    try {
+        await purchaseService.processPurchase({ id, items, total, date, userId });
+        res.status(201).json({ message: 'تم تسجيل ومعالجة عملية الشراء بنجاح.' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
 
 const getPurchasedDevices = async (req, res) => {
     try {
@@ -32,12 +43,16 @@ const getPurchasedDevices = async (req, res) => {
                 d.manufacturer,
                 d.image_url,
                 dva.vehicle_id,
+                v.name as vehicle_name,
                 v.plate_number as vehicle_plate_number,
-                CASE WHEN dva.id IS NOT NULL THEN true ELSE false END as assigned_to_vehicle
+                CASE WHEN dva.id IS NOT NULL THEN true ELSE false END as assigned_to_vehicle,
+                tdc.traccar_id,
+                tdc.traccar_status
             FROM purchased_devices pd
             JOIN primary_devices d ON pd.device_id = d.id
             LEFT JOIN device_vehicle_assignments dva ON pd.serial_number = dva.device_serial_number
             LEFT JOIN vehicles v ON dva.vehicle_id = v.id
+            LEFT JOIN traccar_device_configs tdc ON pd.serial_number = tdc.device_serial_number
             WHERE pd.user_id = :userId
             ORDER BY pd.created_at DESC
         `;
@@ -46,8 +61,6 @@ const getPurchasedDevices = async (req, res) => {
             replacements: { userId },
             type: sequelize.QueryTypes.SELECT
         });
-
-        console.log('Found purchased devices:', JSON.stringify(purchasedDevices, null, 2));
 
         res.json({
             success: true,
@@ -283,6 +296,15 @@ const assignDeviceToVehicle = async (req, res) => {
             VALUES (:deviceSerial, :vehicleId)`,
             {
                 replacements: { deviceSerial, vehicleId }
+            }
+        );
+
+        await sequelize.query(
+            `UPDATE purchased_devices 
+            SET assigned = true 
+            WHERE serial_number = :deviceSerial`,
+            {
+                replacements: { deviceSerial }
             }
         );
 

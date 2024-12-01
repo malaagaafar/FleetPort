@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { router } from 'expo-router';
@@ -31,6 +32,8 @@ interface Device {
   description?: string;
   installation_fee?: number;
   supported_sensors?: string[];
+  serial_number: string;
+  isConnecting?: boolean;
 }
 
 export default function DevicesScreen() {
@@ -46,6 +49,8 @@ export default function DevicesScreen() {
   const [isVehicleModalVisible, setIsVehicleModalVisible] = useState(false);
   const [isTrailerModalVisible, setIsTrailerModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('Get Devices'); // الحالة لتتبع التبويب النشط
+  const [isConnected, setIsConnected] = useState(false); // حالة للتحكم في زر الربط
+  const [connectingDevices, setConnectingDevices] = useState<{ [key: string]: boolean }>({});
 
   const sensorTypes = ['All', 'Temperature', 'Door', 'Fuel', 'Weight', 'Camera'];
   const vehicleTypes = [
@@ -110,15 +115,28 @@ export default function DevicesScreen() {
       refetchOnWindowFocus: false,
       refetchOnMount: false,
     });
-  
-    // نحذف useEffect لأن enabled في useQuery سيتحكم في توقيت جلب البيانات
-  
+
     const handleRefresh = () => {
       if (activeTab === 'Your Devices' && userId) {
         queryClient.invalidateQueries({ queryKey: ['purchasedDevices', userId] });
         queryClient.invalidateQueries({ queryKey: ['purchasedSensors', userId] });
       }
     };
+    const handleConnectToTraccar = async (serialNumber: string) => {
+      try {
+        setConnectingDevices(prev => ({ ...prev, [serialNumber]: true }));
+        await api.post('/devices/connect-traccar', { serialNumber });
+        
+        // إعادة تحميل البيانات مباشرة
+        await queryClient.invalidateQueries(['purchasedDevices', userId]);
+        Alert.alert('نجاح', 'تم ربط الجهاز بنظام التتبع بنجاح');
+      } catch (error: any) {
+        Alert.alert('خطأ', error.response?.data?.message || 'حدث خطأ أثناء ربط الجهاز');
+      } finally {
+        setConnectingDevices(prev => ({ ...prev, [serialNumber]: false }));
+      }
+    };
+
 
 const renderTabs = () => (
   <View style={styles.header}>
@@ -167,9 +185,6 @@ const fetchPurchasedItems = async () => {
           sensorsResponse.data.data : 
           (sensorsResponse.data?.data ? [sensorsResponse.data.data] : []);
 
-      //setPurchasedDevices(devices);
-      //setPurchasedSensors(sensors);
-
   } catch (err: any) {
       console.error('API Error:', err.response?.data || err.message);
       setError(err.response?.data?.message || 'حدث خطأ في جلب البيانات');
@@ -180,7 +195,8 @@ const fetchPurchasedItems = async () => {
 
 const renderPurchasedDeviceCard = (device: any) => {
   const uniqueKey = `device-${device.id}-${device.first_purchase_date}`;
-  
+  const isConnecting = connectingDevices[device.serial_number];
+
   return (
     <TouchableOpacity
       key={uniqueKey}
@@ -206,7 +222,8 @@ const renderPurchasedDeviceCard = (device: any) => {
           </Text>
           {device.assigned_to_vehicle && device.vehicle_plate_number && (
             <Text style={styles.assignedDevice}>
-              مرتبط بالمركبة: {device.vehicle_plate_number}
+              مرتبط بالمركبة: {device.vehicle_name}{'\n'}
+              رقم اللوحة: {device.vehicle_plate_number}
             </Text>
           )}
           {!device.assigned_to_vehicle && (
@@ -221,6 +238,24 @@ const renderPurchasedDeviceCard = (device: any) => {
               })}
             >
               <Text style={styles.assignButtonText}>ربط بمركبة</Text>
+            </TouchableOpacity>
+          )}
+
+        </View>
+        <View style={styles.traccarStatus}>
+          <Text style={styles.statusLabel}>
+            حالة التتبع: {device.traccar_id ? 'متصل' : 'غير متصل'}
+          </Text>
+          
+          {!device.traccar_id && (
+            <TouchableOpacity
+              style={[styles.connectButton, isConnecting && styles.disabledButton]}
+              disabled={isConnecting}
+              onPress={() => handleConnectToTraccar(device.serial_number)}
+            >
+              <Text style={styles.connectButtonText}>
+                {isConnecting ? 'جاري الربط...' : 'Connect'}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -682,6 +717,40 @@ const renderContent = () => {
 }
 
 const styles = StyleSheet.create({
+  traccarStatus: {
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 4,
+  },
+  statusLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  connectButton: {
+    backgroundColor: '#28a745',
+    padding: 8,
+    borderRadius: 4,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  connectButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  traccarInfo: {
+    marginTop: 8,
+  },
+  traccarStatusText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  lastUpdateText: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+  },
   noDataContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -1016,5 +1085,7 @@ section: {
     fontSize: 14,
     fontWeight: '600',
   },
-  // ... باقي الأنماط ...
+  disabledButton: {
+    backgroundColor: '#cccccc',
+  },
 });

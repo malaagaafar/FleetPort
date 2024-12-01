@@ -9,8 +9,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // البيانات تبقى صالحة لمدة 5 دقائق
-      cacheTime: 10 * 60 * 1000, // تبقى في الذاكرة لمدة 10 دقائق
+      staleTime: 0.5 * 60 * 1000, // البيانات تبقى صالحة لمدة 5 دقائق
+      cacheTime: 1 * 60 * 1000, // تبقى في الذاكرة لمدة 10 دقائق
     },
   },
 });
