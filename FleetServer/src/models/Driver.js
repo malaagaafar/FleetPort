@@ -110,8 +110,13 @@ Driver.init({
     field: 'hire_date'
   },
   status: {
-    type: DataTypes.ENUM('pending_review', 'active', 'inactive', 'suspended', 'terminated'),
+    type: DataTypes.ENUM('active', 'inactive', 'on_trip', 'on_leave', 'suspended', 'terminated'),
     defaultValue: 'inactive'
+  },
+  approvalStatus: {
+    type: DataTypes.ENUM('pending_review', 'approved', 'rejected'),
+    field: 'approval_status',
+    defaultValue: 'pending_review'
   },
   currentVehicleId: {
     type: DataTypes.INTEGER,

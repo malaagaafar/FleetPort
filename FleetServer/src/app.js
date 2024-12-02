@@ -7,10 +7,9 @@ const authRoutes = require('./routes/authRoutes');
 const deviceRoutes = require('./routes/deviceRoutes');
 const webhookRoutes = require('./routes/webhook.routes');
 const purchaseRoutes = require('./routes/purchaseRoutes');
-
-
-
-
+const ngrok = require('@ngrok/ngrok'); // تحديث استيراد ngrok
+const path = require('path'); // تأكد من إضافة هذا السطر
+const assignmentRoutes = require('./routes/assignmentRoutes');
 const app = express();
 
 app.use(cors());
@@ -18,6 +17,7 @@ app.use(express.json());
 
 // المسارات
 app.use('/api/auth', authRoutes);
+app.use('/api/assignments', assignmentRoutes);
 //app.use('/api/catalog', deviceCatalogRoutes);
 //app.use('/webhook', webhookRoutes);
 app.use('/api/devices', require('./routes/deviceRoutes'));
@@ -27,7 +27,7 @@ app.use('/api/drivers', require('./routes/driverRoutes'));
 // ... existing code ...
 app.use('/api/purchase', purchaseRoutes);
 // ... existing code ...
-
+//app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -53,16 +53,30 @@ sequelize.authenticate()
         console.log('تم الاتصال بقاعدة البيانات بنجاح');
         
         // مزامنة النماذج مع قاعدة البيانات
-        return sequelize.sync({ alter: true });
+        return sequelize.sync({ alter: false });
     })
-    .then(() => {
+    .then(async () => { // تعديل هنا لجعل الدالة غير متزامنة
         const PORT = process.env.PORT || 3000;
-        app.listen(PORT, '0.0.0.0', () => {
+        
+        // إنشاء خادم Express
+        const server = app.listen(PORT, '0.0.0.0', () => {
             console.log(`الخادم يعمل على المنفذ ${PORT}`);
         });
+
+        try {
+            // إعداد ngrok باستخدام العنوان الثابت
+            const listener = await ngrok.connect({
+                addr: PORT,
+                authtoken: process.env.NGROK_AUTHTOKEN,
+                domain: process.env.NGROK_URL // استخدام العنوان الثابت
+            });
+            console.log(`تم إنشاء نفق ngrok على: ${listener.url()}`);
+        } catch (error) {
+            console.error('خطأ في إعداد ngrok:', error);
+        }
     })
     .catch(err => {
         console.error('خطأ في الاتصال بقاعدة البيانات:', err);
     });
-
-module.exports = { app, sequelize };
+    
+module.exports = { app, sequelize };module.exports = { app, sequelize };

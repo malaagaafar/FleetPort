@@ -100,8 +100,60 @@ const getAvailableVehiclesForDevice = async (req, res) => {
   }
 };
 
+const getVehiclesForAssignment = async (req, res) => {
+    try {
+        const { userId } = req.query;
+        
+        const query = `
+            SELECT 
+                v.id,
+                v.name,
+                v.make,
+                v.model,
+                v.year,
+                v.plate_number,
+                v.type,
+                v.status,
+                v.vehicle_image,
+                (
+                    SELECT COUNT(dva.id) 
+                    FROM drivers_vehicle_assignments dva 
+                    WHERE dva.vehicle_id = v.id 
+                    AND dva.status = 'active'
+                    AND (dva.end_date IS NULL OR dva.end_date > CURRENT_TIMESTAMP)
+                ) as active_drivers_count
+            FROM vehicles v
+            WHERE v.user_id = :userId 
+            AND v.status = 'active'
+            ORDER BY v.created_at DESC
+        `;
+
+        const vehicles = await sequelize.query(query, {
+            replacements: { userId },
+            type: sequelize.QueryTypes.SELECT
+        });
+
+        return res.json({
+            success: true,
+            vehicles: vehicles.map(v => ({
+                ...v,
+                canAssignDriver: v.active_drivers_count < 4
+            }))
+        });
+
+    } catch (error) {
+        console.error('Error fetching vehicles for assignment:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'حدث خطأ أثناء جلب المركبات',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
   createVehicle,
   getAllVehicles,
   getAvailableVehiclesForDevice,
+  getVehiclesForAssignment
 };

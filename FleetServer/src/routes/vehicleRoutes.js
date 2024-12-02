@@ -11,6 +11,7 @@ router.get('/available-for-device', vehicleController.getAvailableVehiclesForDev
 //router.put('/:id', vehicleController.updateVehicle);
 //router.delete('/:id', vehicleController.deleteVehicle);
 //router.get('/:id/location', vehicleController.getVehicleLocation);
+router.get('/for-assignment', vehicleController.getVehiclesForAssignment);
 
 
 module.exports = router;

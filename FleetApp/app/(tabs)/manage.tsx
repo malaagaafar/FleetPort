@@ -14,20 +14,39 @@ export default function ManageScreen() {
   const [vehicles, setVehicles] = useState([]); // الحالة لتخزين بيانات المركبات
   const userId = useSelector((state: RootState) => state.auth.user?.id);
   const [refreshing, setRefreshing] = useState(false);
+  const [drivers, setDrivers] = useState([]);
+  const [driversAssignment, setDriversAssignment] = useState([]);
+
 
   const fetchVehicles = async () => {
     try {
       const response = await api.get(`/vehicles?userId=${userId}`); // إضافة معرف المستخدم في الطلب
       setVehicles(response.data); // تخزين البيانات في الحالة
-      console.log(response.data);
+      //console.log(response.data);
     } catch (error) {
       console.error('Error fetching vehicles:', error);
     }
   };
 
+  const fetchDrivers = async () => {
+    try {
+      //const response = await api.get(`/drivers/company?userId=${userId}`);
+      //setDrivers(response.data);
+      //console.log("res", response.data);
+      const response = await api.get(`/assignments/assigned-driver-vehicles?userId=${userId}`);
+      setDrivers(response.data);
+      //console.log("ass", response.data);
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+    }
+  };
+
   useEffect(() => {
     fetchVehicles(); // استدعاء الدالة لجلب البيانات عند تحميل المكون
-  }, []); // [] تعني أن الدالة ستنفذ مرة واحدة عند تحميل المكون
+    if (activeTab === 'Drivers') {
+      fetchDrivers();
+    }
+  }, [activeTab]); // [] تعني أن الدالة ستنفذ مرة واحدة عند تحميل المكون
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -240,7 +259,7 @@ export default function ManageScreen() {
             
             <TouchableOpacity 
               style={[styles.actionButton, styles.greenButton]}
-              onPress={() => router.push('/(assign)/DriverAssign')}
+              onPress={() => router.push('/assign/DriverVehicles')}
             >
               <Text style={styles.greenButtonText}>Assign Driver to a Vehicle</Text>
             </TouchableOpacity>
@@ -281,6 +300,72 @@ export default function ManageScreen() {
     );
   };
 
+  const renderDriversTab = () => {
+    return (
+      <View style={styles.driversSection}>
+        <Text style={styles.sectionTitle}>Manage Drivers</Text>
+        
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.grayButton]} 
+            onPress={() => router.push('/(inputs)/AddDriver')}
+          >
+            <Text style={styles.grayButtonText}>Add a New Driver</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.greenButton]}
+            onPress={() => router.push('/assign/DriverVehicles')}
+          >
+            <Text style={styles.greenButtonText}>Assign Driver to a Vehicle</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionSubtitle}>Your Drivers</Text>
+            <TouchableOpacity>
+              <Image 
+                source={require('../../assets/icons/sort.png')}
+                style={styles.moreButton}
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.driversScroll}>
+            {drivers.map((driver, index) => (
+              <View key={index} style={styles.driverCard}>
+                <View style={[styles.driverIcon, getStatusStyle(driver.status)]}>
+                <Image 
+                  source={{ uri: driver.profile_image || 'https://your-default-image.png' }}
+                  style={styles.driverImage}
+                  /> 
+                </View>
+                <View style={styles.driverInfo}>
+                  <Text style={styles.driverName}>
+                    {driver.first_name} {driver.last_name}
+                  </Text>
+                  {driver.vehicle_name ? (
+                    <View style={styles.vehicleInfo}>
+                      <Text style={styles.vehicleName}>
+                        {driver.vehicle_name}
+                      </Text>
+                      <Text style={styles.plateNumber}>
+                        {driver.vehicle_plate_number}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.noVehicle}>No vehicle assigned</Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <ScrollView 
       contentContainerStyle={styles.scrollViewContainer}
@@ -309,6 +394,7 @@ export default function ManageScreen() {
       </View>
       {activeTab === 'Vehicles' && renderVehiclesTab()}
       {activeTab === 'Vehicles' && renderMaintenanceReport()}
+      {activeTab === 'Drivers' && renderDriversTab()}
     </ScrollView>
   );
 }
@@ -681,5 +767,68 @@ const styles = StyleSheet.create({
   vehicleName: {
     marginTop: 5,
     textAlign: 'center',
+  },
+  driversSection: {
+    width: '100%',
+    padding: 16,
+    paddingBottom: 275,
+  },
+  driverCard: {
+    alignItems: 'center',
+    marginRight: 20,
+    width: 120,
+  },
+  driverImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: '#eee',
+  },
+  driverInfo: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  driverName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  vehicleInfo: {
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 4,
+    borderRadius: 4,
+    width: '100%',
+  },
+  vehicleName: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  plateNumber: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 2,
+  },
+  noVehicle: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  driversScroll: {
+    marginBottom: 16,
+  },
+  driverIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    overflow: 'hidden',
   },
 });

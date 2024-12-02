@@ -138,7 +138,8 @@ CREATE TYPE vehicle_type AS ENUM (
 );
 CREATE TABLE vehicles (
     id SERIAL PRIMARY KEY,
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,  -- تم تغييرها من INTEGER إلى UUID
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
     type vehicle_type NOT NULL,
     make VARCHAR(50) NOT NULL,           -- الشركة المصنعة
     model VARCHAR(50) NOT NULL,          -- الموديل
@@ -162,6 +163,9 @@ CREATE TABLE vehicles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE vehicles
+ADD CONSTRAINT unique_user_vehicle_name UNIQUE (user_id, name);
 
 CREATE TABLE partner_accounts (
     id UUID PRIMARY KEY,
@@ -341,6 +345,20 @@ CREATE TABLE purchased_devices (
     assigned boolean DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- جدول تعريفات Traccar للأجهزة المشتراة
+CREATE TABLE traccar_device_configs (
+    id SERIAL PRIMARY KEY,
+    device_serial_number VARCHAR(50) REFERENCES purchased_devices(serial_number),
+    traccar_id INTEGER UNIQUE,                    -- معرف Traccar بعد الإنشاء
+    traccar_status VARCHAR(20),                   -- online, offline, unknown
+    traccar_disabled BOOLEAN DEFAULT false,
+    last_update TIMESTAMP WITH TIME ZONE,
+    last_position_id BIGINT,                      -- آخر موقع مسجل
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- المستشعرات المشتراة
 CREATE TABLE purchased_sensors (
     id SERIAL PRIMARY KEY,
@@ -503,9 +521,9 @@ CREATE INDEX idx_maintenance_logs_device ON device_maintenance_logs(device_id);
 ---------------------------------------
 -- قراءات الأجهزة
 -- جدول قراءات المواقع (كما هو من Traccar)
-CREATE TABLE device_positions (
+/*CREATE TABLE device_positions (
     id BIGSERIAL PRIMARY KEY,
-    device_assignment_id INTEGER REFERENCES device_vehicle_assignments(id),
+    device_serial_number INTEGER REFERENCES purchased_devices(serial_number),
     traccar_position_id BIGINT NOT NULL,
     protocol VARCHAR(50),
     device_time TIMESTAMP WITH TIME ZONE,
@@ -522,7 +540,42 @@ CREATE TABLE device_positions (
     attributes JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(device_assignment_id, traccar_position_id)
+);*/
+
+CREATE TABLE device_positions (
+    id BIGSERIAL PRIMARY KEY,
+    device_serial_number VARCHAR(50) REFERENCES purchased_devices(serial_number),
+    traccar_position_id BIGINT NOT NULL,
+    protocol VARCHAR(50),
+    
+    -- بيانات الوقت
+    device_time TIMESTAMP WITH TIME ZONE,
+    fix_time TIMESTAMP WITH TIME ZONE,
+    server_time TIMESTAMP WITH TIME ZONE,
+    
+    -- بيانات الموقع
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    altitude DOUBLE PRECISION,
+    speed DOUBLE PRECISION,
+    course DOUBLE PRECISION,
+    address TEXT,
+    accuracy DOUBLE PRECISION,
+    
+    -- بيانات الشبكة والحالة
+    valid BOOLEAN DEFAULT true,
+    network JSONB,
+    
+    -- البيانات الإضافية
+    raw_attributes JSONB,          -- البيانات الخام من الجهاز
+    computed_attributes JSONB,      -- البيانات المحسوبة
+    sensor_readings JSONB,         -- قراءات المستشعرات
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT unique_position UNIQUE(device_serial_number, traccar_position_id)
 );
+
 -- جدول قراءات المستشعرات (مستخرجة من attributes)
 CREATE TABLE sensor_readings (
     id BIGSERIAL PRIMARY KEY,
