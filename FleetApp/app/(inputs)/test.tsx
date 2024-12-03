@@ -1,0 +1,796 @@
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router'; // استيراد useRouter
+import { useCallback, useEffect, useState } from 'react'; // استيراد useState
+import api from '@/config/api';
+import { RootState } from '@/store/store';
+import { useSelector } from 'react-redux';
+import { Image } from 'react-native'; // تأكد من استيراد Image
+import { RefreshControl } from 'react-native'; // أضف هذا الاستيراد
+
+
+export default function ManageScreen() {
+  const router = useRouter(); // استخدام useRouter
+  const [activeTab, setActiveTab] = useState('Trips'); // الحالة لتتبع التبويب النشط
+  const [vehicles, setVehicles] = useState([]); // الحالة لتخزين بيانات المركبات
+  const userId = useSelector((state: RootState) => state.auth.user?.id);
+  const [refreshing, setRefreshing] = useState(false);
+  const [drivers, setDrivers] = useState([]);
+  const [driversAssignment, setDriversAssignment] = useState([]);
+
+
+  const fetchVehicles = async () => {
+    try {
+      const response = await api.get(`/vehicles?userId=${userId}`); // إضافة معرف المستخدم في الطلب
+      setVehicles(response.data); // تخزين البيانات في الحالة
+      //console.log(response.data);
+    } catch (error) {
+      console.error('Error fetching vehicles:', error);
+    }
+  };
+
+  const fetchDrivers = async () => {
+    try {
+      //const response = await api.get(`/drivers/company?userId=${userId}`);
+      //setDrivers(response.data);
+      //console.log("res", response.data);
+      const response = await api.get(`/assignments/assigned-driver-vehicles?userId=${userId}`);
+      setDrivers(response.data);
+      console.log("ass", response.data);
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchVehicles(); // استدعاء الدالة لجلب البيانات عند تحميل المكون
+    if (activeTab === 'Drivers') {
+      fetchDrivers();
+    }
+  }, [activeTab]); // [] تعني أن الدالة ستنفذ مرة واحدة عند تحميل المكون
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // إعادة تحميل البيانات
+      await fetchVehicles();
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [userId]);
+
+
+  const navigateToForm = () => {
+    console.log(activeTab);
+    if (activeTab === 'Vehicles') {
+      router.push('/(inputs)/AddVehicle'); // تغيير المسار حسب هيكل مشروعك
+    } else if (activeTab === 'Drivers') {
+      router.push('/(inputs)/AddDriver'); // تغيير المسار حسب هيكل مشروعك
+    } else {
+      router.push('/(inputs)/AddVehicle'); // تغيير المسار حسب هيكل مشروعك
+    }
+  };
+
+  const renderVehiclesList = () => {
+    return (
+      <View style={styles.vehiclesListContainer}>
+        {vehicles.map((vehicle, index) => (
+          <View key={index} style={styles.vehicleItem}>
+            <View style={[styles.vehicleIcon, getStatusStyle(vehicle.status)]}>
+              {vehicle.alerts > 0 && <Text style={styles.alertCount}>{vehicle.alerts}</Text>}
+              {vehicle.vehicle_image && ( // تحقق من وجود صورة المركبة
+              <Image 
+                  source={{ uri: vehicle.vehicle_image }} // استخدام عنوان URL للصورة
+                  style={styles.vehicleImage} // إضافة نمط للصورة
+                />
+              )}
+            </View>
+            <Text style={styles.vehicleName}>{vehicle.make} {vehicle.model}</Text>
+          </View>
+        ))}
+      </View>
+    );
+  };
+  
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'active':
+        return { borderColor: '#4CD964' }; // لون الحدود للمركبة النشطة
+      case 'warning':
+        return { borderColor: 'red' }; // لون الحدود للمركبة التي بها تحذير
+      case 'inactive':
+        return { borderColor: 'gray' }; // لون الحدود للمركبة غير النشطة
+      default:
+        return {};
+    }
+  };
+
+  
+  const maintenanceTasks = [
+    {
+      id: 1,
+      icon: require('../../assets/icons/fuel-in.png'),
+      task: 'Fuel Refill',
+      vehicle: 'Volvo 320C',
+      measure: '10%',
+    },
+    {
+      id: 2,
+      icon: require('../../assets/icons/oil-in.png'),
+      task: 'Oil Change',
+      vehicle: 'Mercedes C2',
+      measure: '5%',
+    },
+    {
+      id: 3,
+      icon: require('../../assets/icons/tire-in.png'),
+      task: 'Tire Alignment',
+      vehicle: 'Volvo 320C',
+      measure: '-0.5°, 4.0°, 0.15°, 1/16 inch',
+    },
+  ];
+
+  
+  const maintenanceIcons = [
+    { id: 1, badge: 2, icon: require('../../assets/icons/car-oil-in.png') },
+    //{ id: 2, badge: 2, icon: require('../../assets/icons/diy.png') },
+    { id: 2, badge: 2, icon: require('../../assets/icons/fuel.png') },
+    { id: 3, badge: 2, icon: require('../../assets/icons/car-engine.png') },
+    { id: 4, badge: 2, icon: require('../../assets/icons/disc-brake.png') },
+    { id: 5, badge: 1, icon: require('../../assets/icons/temperature-in.png') },
+    { id: 6, badge: 1, icon: require('../../assets/icons/electric-service-in.png') },
+    //{ id: 8, badge: 1, icon: require('../../assets/icons/gauge.png') },
+    { id: 7, badge: 1, icon: require('../../assets/icons/condenser-coil.png') },
+    { id: 8, badge: 1, icon: require('../../assets/icons/car-battery.png') },
+    { id: 9, badge: 3, icon: require('../../assets/icons/schedule.png') },
+    //{ id: 10, badge: 3, icon: require('../../assets/icons/inspection-in.png') },
+    { id: 11, badge: 3, icon: require('../../assets/icons/compressor.png') },
+    { id: 12, badge: 3, icon: require('../../assets/icons/monitoring.png') },
+    { id: 13, badge: 3, icon: require('../../assets/icons/steering-wheel-in.png') },
+  ];
+
+  const renderMaintenanceReport = () => (
+    <View style={styles.maintenanceSection}>
+      <View style={styles.header}>
+        <Text style={styles.maintenanceTitle}>Maintenance Report</Text>
+      </View>
+      
+      <View style={styles.iconsContainer}>
+        <View style={styles.iconRow}>
+          {maintenanceIcons.slice(0, 4).map((item) => (
+            <TouchableOpacity key={item.id} style={styles.iconWrapper}>
+              <View style={styles.iconBox}>
+                <Image source={item.icon} style={styles.maintenanceIcon} />
+                {item.badge > 0 && (
+                  <View style={styles.redBadge}>
+                    <Text style={styles.badgeText}>{item.badge}</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+  
+        <View style={styles.iconRow}>
+          {maintenanceIcons.slice(4, 8).map((item) => (
+            <TouchableOpacity key={item.id} style={styles.iconWrapper}>
+              <View style={styles.iconBox}>
+                <Image source={item.icon} style={styles.maintenanceIcon} />
+                {item.badge > 0 && (
+                  <View style={styles.redBadge}>
+                    <Text style={styles.badgeText}>{item.badge}</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+  
+        <View style={styles.iconRow}>
+          {maintenanceIcons.slice(8, 12).map((item) => (
+            <TouchableOpacity key={item.id} style={styles.iconWrapper}>
+              <View style={styles.iconBox}>
+                <Image source={item.icon} style={styles.maintenanceIcon} />
+                {item.badge > 0 && (
+                  <View style={styles.redBadge}>
+                    <Text style={styles.badgeText}>{item.badge}</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+  
+      <ScrollView style={styles.tasksContainer} showsVerticalScrollIndicator={false}>
+        {maintenanceTasks.map((task) => (
+          <View key={task.id} style={styles.taskCard}>
+            <View style={styles.taskLeft}>
+              <View style={styles.taskIconContainer}>
+                <Image source={task.icon} style={styles.taskIcon} />
+              </View>
+              <View style={styles.taskDetails}>
+                <View style={styles.taskRow}>
+                  <Text style={styles.label}>Task:</Text>
+                  <Text style={styles.value}>{task.task}</Text>
+                </View>
+                <View style={styles.taskRow}>
+                  <Text style={styles.label}>Vehicle:</Text>
+                  <Text style={styles.value}>{task.vehicle}</Text>
+                </View>
+                <View style={styles.taskRow}>
+                  <Text style={styles.label}>Measure:</Text>
+                  <Text style={styles.value}>{task.measure}</Text>
+                </View>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.scheduleButton}>
+              <Image 
+                source={require('../../assets/icons/add-event-in.png')} 
+                style={styles.scheduleIcon} 
+              />
+            </TouchableOpacity>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+  const renderVehiclesTab = () => {
+    return (
+      <View style={styles.vehiclesSection}>
+        <Text style={styles.sectionTitle}>Manage Vehicles</Text>
+                
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.grayButton]} 
+            onPress={navigateToForm}
+          >
+            <Text style={styles.grayButtonText}>Add a New Vehicle</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.greenButtonsContainer}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.greenButton]} 
+              onPress={() => router.push('/(assign)/DeviceAssign')}
+            >
+              <Text style={styles.greenButtonText}>Assign Device to a Vehicle</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.greenButton]}
+              onPress={() => router.push('/assign/DriverVehicles')}
+            >
+              <Text style={styles.greenButtonText}>Assign Driver to a Vehicle</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+  
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionSubtitle}>Your Vehicles</Text>
+            <TouchableOpacity>
+              <Image 
+                source={require('../../assets/icons/sort.png')} // استبدل بمسار الصورة الخاصة بك
+                style={styles.moreButton} // يمكنك إضافة نمط خاص للصورة
+              />
+            </TouchableOpacity>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.vehiclesScroll}>
+            {vehicles.map((vehicle, index) => (
+              <View key={index} style={styles.vehicleCard}>
+                <View style={[styles.vehicleIcon, getStatusStyle(vehicle.status)]}>
+                  <Image 
+                    source={{ uri: vehicle.vehicleImage }} // تغيير vehicle_image إلى vehicleImage
+                    style={styles.vehicleImage}
+                    resizeMode="cover"
+                  />
+                  {vehicle.alerts > 0 && (
+                    <View style={styles.alertBadge}>
+                      <Text style={styles.alertCount}>{vehicle.alerts}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.vehicleName}>{vehicle.make} {vehicle.model}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    );
+  };
+
+  const renderDriversTab = () => {
+    return (
+      <View style={styles.driversSection}>
+        <Text style={styles.sectionTitle}>Manage Drivers</Text>
+        
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.grayButton]} 
+            onPress={() => router.push('/(inputs)/AddDriver')}
+          >
+            <Text style={styles.grayButtonText}>Add a New Driver</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.greenButton]}
+            onPress={() => router.push('/assign/DriverVehicles')}
+          >
+            <Text style={styles.greenButtonText}>Assign Driver to a Vehicle</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionSubtitle}>Your Drivers</Text>
+            <TouchableOpacity>
+              <Image 
+                source={require('../../assets/icons/sort.png')}
+                style={styles.moreButton}
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.driversScroll}>
+            {drivers.map((driver, index) => (
+              <View key={index} style={styles.driverCard}>
+                <View style={[styles.driverIcon, getStatusStyle(driver.status)]}>
+                  <Image 
+                    source={driver.profile_image ? { uri: driver.profile_image } : require('../../assets/icons/profile-user.png')}
+                    style={styles.driverImage}
+                    resizeMode="cover"
+                  />
+                  {driver.alerts > 0 && (
+                    <View style={styles.alertBadge}>
+                      <Text style={styles.alertCount}>{driver.alerts}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.driverName}>{driver.first_name} {driver.last_name}</Text>
+                <Text style={styles.driverName}>{driver.vehicle_name} </Text>
+                <Text style={styles.driverName}>{driver.vehicle_plate_number}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <ScrollView 
+      contentContainerStyle={styles.scrollViewContainer}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          // تخصيص مظهر مؤشر التحديث
+          tintColor="#000"
+          colors={["#000"]}
+          progressBackgroundColor="#fff"
+          progressViewOffset={40} // لجعل مؤشر التحديث يظهر تحت التابات
+        />
+      }
+    >      
+      <View style={styles.tabsContainer}>
+        {['Trips', 'Vehicles', 'Drivers', 'Services'].map((tab) => (
+          <TouchableOpacity
+            key={tab}
+            style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]} // تمييز التبويب النشط
+            onPress={() => setActiveTab(tab)} // تحديث الحالة عند الضغط
+          >
+            <Text style={[styles.tabText, activeTab === tab ? styles.activeTabText : styles.inactiveTabText]}>{tab}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {activeTab === 'Vehicles' && renderVehiclesTab()}
+      {activeTab === 'Vehicles' && renderMaintenanceReport()}
+      {activeTab === 'Drivers' && renderDriversTab()}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  vehicleImage: {
+    width: '70%', // اجعل الصورة تأخذ العرض الكامل
+    height: '70%', // اجعل الصورة تأخذ الارتفاع الكامل
+    borderRadius: 8, // إذا كنت تريد زوايا دائرية
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  maintenanceSection: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingTop: 0,
+    paddingBottom: 20,
+    width: '100%', // إضافة عرض كامل
+    paddingHorizontal: 15, // إضافة هوامش جانبية
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 5,
+  },
+  maintenanceTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1A1A',
+  },
+  iconsContainer: {
+    marginBottom: 6,
+    width: '97%', // تأكيد على العرض الكامل
+    paddingHorizontal: 10, // هوامش داخلية
+  },
+  
+  iconRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    width: '100%', // تأكيد على العرض الكامل
+  },
+  iconWrapper: {
+    padding: 4,
+  },
+  iconBox: {
+    width: 60,
+    height: 60,
+    backgroundColor: '#fff',
+    //borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    //shadowColor: '#000',
+    //shadowOffset: { width: 0, height: 2 },
+    //shadowOpacity: 0.05,
+    //shadowRadius: 4,
+    //elevation: 2,
+  },
+  maintenanceIcon: {
+    width: 36,
+    height: 36,
+  },
+  redBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#FF3B30',
+    width: 22,
+    height: 22,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  tasksContainer: {
+    flex: 1,
+  },
+  taskCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 1,
+    borderWidth: 1,
+    borderColor: '#F1F1F1',
+    width: '100%', // تأكيد على العرض الكامل
+  },
+  taskLeft: {
+    flexDirection: 'row',
+    flex: 1,
+    alignItems: 'center',
+  },
+  taskIconContainer: {
+    width: 48,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  taskIcon: {
+    width: 38,
+    height: 36,
+  },
+  taskDetails: {
+    flex: 1,
+  },
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  label: {
+    width: 70,
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '500',
+  },
+  value: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1A1A1A',
+    fontWeight: '600',
+  },
+  scheduleButton: {
+    padding: 8,
+  },
+  scheduleIcon: {
+    width: 28,
+    height: 28,
+    tintColor: '#4CD964', // لون أخضر فاتح
+  },
+  scrollViewContainer: {
+    alignItems: 'center',
+    paddingTop: 0,
+    backgroundColor: '#fff',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 10,
+  },
+  activeTab: {
+    backgroundColor: '#000',
+  },
+  inactiveTab: {
+    backgroundColor: '#fff',
+  },
+  tabText: {
+    fontSize: 16,
+  },
+  activeTabText: {
+    color: '#fff',
+  },
+  inactiveTabText: {
+    color: '#000',
+  },
+  maintenanceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  iconContainer: {
+    width: '18%',
+    aspectRatio: 1,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 0,
+  },
+  iconText: {
+    fontSize: 24,
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tasksScrollView: {
+    maxHeight: 300,
+  },
+  taskInfo: {
+    flex: 1,
+  },
+  taskLabel: {
+    width: 70,
+    color: '#666',
+    fontSize: 14,
+  },
+  taskValue: {
+    flex: 1,
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  actionButtons: {
+    width: '100%',
+    paddingHorizontal: 5,
+    marginTop: 0,
+    marginBottom: 15,
+  },
+  actionButton: {
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 45,
+  },
+  greenButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  grayButton: {
+    backgroundColor: '#F2F2F2',
+    marginBottom: 12,
+  },
+  greenButton: {
+    backgroundColor: '#4CD964',
+    flex: 1,
+  },
+  grayButtonText: {
+    color: '#000000',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  greenButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  vehiclesSection: {
+    width: '100%',
+    padding: 16,
+    paddingBottom: 0,
+  },
+  addButton: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  assignButton: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  section: {
+    marginBottom: 22,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  moreButton: {
+    width: 18, // عرض الصورة
+    height: 18, // ارتفاع الصورة
+  },
+  vehiclesScroll: {
+    marginBottom: 16,
+  },
+  vehicleCard: {
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  vehicleIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#021037',
+    overflow: 'hidden',
+  },
+  alertBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  sectionSubtitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    paddingTop: 0,
+  },
+  button: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: '#007BFF', // لون الخلفية
+    borderRadius: 5,
+  },
+  vehiclesList: {
+    marginTop: 10,
+  },
+  maintenanceReport: {
+    marginTop: 0,
+  },
+  vehiclesListContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    width: '100%',
+  },
+  vehicleItem: {
+    alignItems: 'center',
+  },
+  alertCount: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: 'red',
+    color: 'white',
+    borderRadius: 10,
+    padding: 2,
+    fontSize: 12,
+  },
+  vehicleName: {
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  driversSection: {
+    width: '100%',
+    padding: 16,
+    paddingBottom: 275,
+  },
+  driverCard: {
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  driverIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+  },
+  driverImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 28,
+  },
+  driverName: {
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  driversScroll: {
+    marginBottom: 16,
+  },
+});

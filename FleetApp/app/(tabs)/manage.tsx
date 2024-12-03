@@ -20,9 +20,12 @@ export default function ManageScreen() {
 
   const fetchVehicles = async () => {
     try {
-      const response = await api.get(`/vehicles?userId=${userId}`); // إضافة معرف المستخدم في الطلب
-      setVehicles(response.data); // تخزين البيانات في الحالة
+      //const response = await api.get(`/vehicles?userId=${userId}`); // إضافة معرف المستخدم في الطلب
+      //setVehicles(response.data); // تخزين البيانات في الحالة
       //console.log(response.data);
+      const response = await api.get(`/assignments/assigned-vehicle-devices?userId=${userId}`); // إضافة معرف المستخدم في الطلب
+      setVehicles(response.data); // تخزين البيانات في الحالة
+      console.log(response.data);
     } catch (error) {
       console.error('Error fetching vehicles:', error);
     }
@@ -53,6 +56,7 @@ export default function ManageScreen() {
     try {
       // إعادة تحميل البيانات
       await fetchVehicles();
+      await fetchDrivers();
     } catch (error) {
       console.error('Error refreshing data:', error);
     } finally {
@@ -72,7 +76,7 @@ export default function ManageScreen() {
     }
   };
 
-  const renderVehiclesList = () => {
+  /*const renderVehiclesList = () => {
     return (
       <View style={styles.vehiclesListContainer}>
         {vehicles.map((vehicle, index) => (
@@ -91,7 +95,7 @@ export default function ManageScreen() {
         ))}
       </View>
     );
-  };
+  };*/
   
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -252,7 +256,7 @@ export default function ManageScreen() {
           <View style={styles.greenButtonsContainer}>
             <TouchableOpacity 
               style={[styles.actionButton, styles.greenButton]} 
-              onPress={() => router.push('/(assign)/DeviceAssign')}
+              onPress={() => router.push('/assign/DeviceVehicleAssignment')}
             >
               <Text style={styles.greenButtonText}>Assign Device to a Vehicle</Text>
             </TouchableOpacity>
@@ -271,8 +275,8 @@ export default function ManageScreen() {
             <Text style={styles.sectionSubtitle}>Your Vehicles</Text>
             <TouchableOpacity>
               <Image 
-                source={require('../../assets/icons/sort.png')} // استبدل بمسار الصورة الخاصة بك
-                style={styles.moreButton} // يمكنك إضافة نمط خاص للصورة
+                source={require('../../assets/icons/sort.png')}
+                style={styles.moreButton}
               />
             </TouchableOpacity>
           </View>
@@ -281,7 +285,7 @@ export default function ManageScreen() {
               <View key={index} style={styles.vehicleCard}>
                 <View style={[styles.vehicleIcon, getStatusStyle(vehicle.status)]}>
                   <Image 
-                    source={{ uri: vehicle.vehicleImage }} // تغيير vehicle_image إلى vehicleImage
+                    source={{ uri: vehicle.vehicle_image || 'https://your-default-image.png' }} 
                     style={styles.vehicleImage}
                     resizeMode="cover"
                   />
@@ -291,7 +295,24 @@ export default function ManageScreen() {
                     </View>
                   )}
                 </View>
-                <Text style={styles.vehicleName}>{vehicle.make} {vehicle.model}</Text>
+                <View style={styles.vehicleInfo}>
+                  <Text style={styles.vehicleName}>{vehicle.name}</Text>
+                  <Text style={styles.vehicleDetails}>
+                    {vehicle.make} {vehicle.model}
+                  </Text>
+                  {vehicle.device_name ? (
+                    <View style={styles.deviceInfo}>
+                      <Text style={styles.deviceName}>
+                        {vehicle.device_name}
+                      </Text>
+                      <Text style={styles.serialNumber}>
+                        {vehicle.device_serial_number}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.noDevice}>No device assigned</Text>
+                  )}
+                </View>
               </View>
             ))}
           </ScrollView>
@@ -346,16 +367,16 @@ export default function ManageScreen() {
                     {driver.first_name} {driver.last_name}
                   </Text>
                   {driver.vehicle_name ? (
-                    <View style={styles.vehicleInfo}>
-                      <Text style={styles.vehicleName}>
+                    <View style={styles.assignedVehicleInfo}>
+                      <Text style={styles.assignedVehicleName}>
                         {driver.vehicle_name}
                       </Text>
-                      <Text style={styles.plateNumber}>
+                      <Text style={styles.assignedVehiclePlate}>
                         {driver.vehicle_plate_number}
                       </Text>
                     </View>
                   ) : (
-                    <Text style={styles.noVehicle}>No vehicle assigned</Text>
+                    <Text style={styles.noAssignedVehicle}>No vehicle assigned</Text>
                   )}
                 </View>
               </View>
@@ -366,43 +387,328 @@ export default function ManageScreen() {
     );
   };
 
+  const renderTripsTab = () => {
+    return (
+      <View style={styles.tripsSection}>
+        <Text style={styles.sectionTitle}>Manage Trips</Text>
+        
+        <View style={styles.actionButtons}>
+          <View style={styles.tripButtonsRow}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.grayButton, styles.twoThirdButton]} 
+              onPress={() => {}}
+            >
+              <Text style={styles.grayButtonText}>Schedule a New Trip</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.grayButton, styles.oneThirdButton]} 
+              onPress={() => {}}
+            >
+              <Text style={styles.grayButtonText}>Edit Trip</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.greenButton]}
+            onPress={() => {}}
+          >
+            <Text style={styles.greenButtonText}>Start Scheduled Trip</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionSubtitle}>Upcoming</Text>
+          {/* بطاقة الرحلة القادمة */}
+          <Text style={styles.tripDate}>21 Oct, 2024</Text>
+          <View style={styles.tripCard}>
+            <View style={styles.tripDetails}>
+              <View style={styles.tripIconContainer}>
+                <View style={styles.tripIcon}>
+                <Image 
+                  source={require('../../assets/icons/trip.png')}
+                  style={styles.tripIcon}
+                />                  
+                </View>
+              </View>
+              <View style={styles.tripInfo}>
+                <View style={styles.tripRow}>
+                  <Text style={styles.tripLabel}>Trip:</Text>
+                  <Text style={styles.tripValue}>Walmart Shipment 3</Text>
+                </View>
+                <View style={styles.tripRow}>
+                  <Text style={styles.tripLabel}>Vehicle:</Text>
+                  <Text style={styles.tripValue}>Volvo 320C</Text>
+                </View>
+                <View style={styles.tripRow}>
+                  <Text style={styles.tripLabel}>Driver:</Text>
+                  <Text style={styles.tripValue}>Youssef Mohamed</Text>
+                </View>
+                <View style={styles.tripRow}>
+                  <Text style={styles.tripLabel}>Status:</Text>
+                  <Text style={styles.tripValue}>Scheduled</Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.tripArrow}>
+                <Text style={styles.arrowText}>▶</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionSubtitle}>Active</Text>
+          {/* بطاقة افتراضية للرحلات النشطة */}
+          <Text style={styles.tripDate}>21 Oct, 2024</Text>
+          <View style={styles.tripCard}>
+            <View style={styles.tripDetails}>
+              <View style={styles.tripIconContainer}>
+                <View style={styles.tripIcon}>
+                <Image 
+                  source={require('../../assets/icons/trip.png')}
+                  style={styles.tripIcon}
+                />   
+                </View>
+              </View>
+              <View style={styles.tripInfo}>
+                <View style={styles.tripRow}>
+                  <Text style={styles.tripLabel}>Trip:</Text>
+                  <Text style={styles.tripValue}>Walmart Shipment 2</Text>
+                </View>
+                <View style={styles.tripRow}>
+                  <Text style={styles.tripLabel}>Vehicle:</Text>
+                  <Text style={styles.tripValue}>Volvo 320C</Text>
+                </View>
+                <View style={styles.tripRow}>
+                  <Text style={styles.tripLabel}>Driver:</Text>
+                  <Text style={styles.tripValue}>Ali Ahmed</Text>
+                </View>
+                <View style={styles.tripRow}>
+                  <Text style={styles.tripLabel}>Status:</Text>
+                  <Text style={styles.tripValue}>GTA, North York</Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.tripArrow}>
+                <Text style={styles.arrowText}></Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionSubtitle}>History</Text>
+          {/* بطاقة افتراضية للتاريخ */}
+          <Text style={styles.tripDate}>20 Oct, 2024</Text>
+          <View style={styles.tripCard}>
+            <View style={styles.tripDetails}>
+              <View style={styles.tripIconContainer}>
+                <View style={styles.tripIcon}>
+                <Image 
+                  source={require('../../assets/icons/trip.png')}
+                  style={styles.tripIcon}
+                />   
+                </View>
+              </View>
+              <View style={styles.tripInfo}>
+                <View style={styles.tripRow}>
+                  <Text style={styles.tripLabel}>Trip:</Text>
+                  <Text style={styles.tripValue}>Walmart Shipment 1</Text>
+                </View>
+                <View style={styles.tripRow}>
+                  <Text style={styles.tripLabel}>Vehicle:</Text>
+                  <Text style={styles.tripValue}>Volvo 320C</Text>
+                </View>
+                <View style={styles.tripRow}>
+                  <Text style={styles.tripLabel}>Driver:</Text>
+                  <Text style={styles.tripValue}>Sara Ali</Text>
+                </View>
+                <View style={styles.tripRow}>
+                  <Text style={styles.tripLabel}>Status:</Text>
+                  <Text style={styles.tripValue}>Completed</Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.tripArrow}>
+                <Text style={styles.arrowText}></Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const renderServicesTab = () => {
+    return (
+      <View style={styles.servicesSection}>
+        <Text style={styles.sectionTitle}>Manage Services</Text>
+        
+        <View style={styles.actionButtons}>
+          <View style={styles.tripButtonsRow}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.grayButton, styles.twoThirdButton]} 
+              onPress={() => {}}
+            >
+              <Text style={styles.grayButtonText}>Schedule New Service</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.grayButton, styles.oneThirdButton]} 
+              onPress={() => {}}
+            >
+              <Text style={styles.grayButtonText}>Edit Service</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.greenButton]}
+            onPress={() => {}}
+          >
+            <Text style={styles.greenButtonText}>Start Scheduled Service</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionSubtitle}>Upcoming</Text>
+          <Text style={styles.serviceDate}>25 Oct, 2024</Text>
+          <View style={styles.serviceCard}>
+            <View style={styles.serviceDetails}>
+              <View style={styles.serviceIconContainer}>
+                <Image 
+                  source={require('../../assets/icons/oil-in.png')}
+                  style={styles.serviceIcon}
+                />
+              </View>
+              <View style={styles.serviceInfo}>
+                <View style={styles.serviceRow}>
+                  <Text style={styles.serviceLabel}>Service:</Text>
+                  <Text style={styles.serviceValue}>Oil Change</Text>
+                </View>
+                <View style={styles.serviceRow}>
+                  <Text style={styles.serviceLabel}>Vehicle:</Text>
+                  <Text style={styles.serviceValue}>Mercedes C2</Text>
+                </View>
+                <View style={styles.serviceRow}>
+                  <Text style={styles.serviceLabel}>Status:</Text>
+                  <Text style={styles.serviceValue}>Scheduled</Text>
+                </View>
+                <View style={styles.serviceRow}>
+                  <Text style={styles.serviceLabel}>Provider:</Text>
+                  <Text style={styles.serviceValue}>AutoCare Center</Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.serviceArrow}>
+                <Text style={styles.arrowText}>▶</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionSubtitle}>Active</Text>
+          <Text style={styles.serviceDate}>21 Oct, 2024</Text>
+          <View style={styles.serviceCard}>
+            <View style={styles.serviceDetails}>
+              <View style={styles.serviceIconContainer}>
+                <Image 
+                  source={require('../../assets/icons/tire-in.png')}
+                  style={styles.serviceIcon}
+                />
+              </View>
+              <View style={styles.serviceInfo}>
+                <View style={styles.serviceRow}>
+                  <Text style={styles.serviceLabel}>Service:</Text>
+                  <Text style={styles.serviceValue}>Tire Alignment</Text>
+                </View>
+                <View style={styles.serviceRow}>
+                  <Text style={styles.serviceLabel}>Vehicle:</Text>
+                  <Text style={styles.serviceValue}>Volvo 320C</Text>
+                </View>
+                <View style={styles.serviceRow}>
+                  <Text style={styles.serviceLabel}>Status:</Text>
+                  <Text style={styles.serviceValue}>In Progress</Text>
+                </View>
+                <View style={styles.serviceRow}>
+                  <Text style={styles.serviceLabel}>Provider:</Text>
+                  <Text style={styles.serviceValue}>TirePro Shop</Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.serviceArrow}>
+                <Text style={styles.arrowText}></Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionSubtitle}>History</Text>
+          <Text style={styles.serviceDate}>18 Oct, 2024</Text>
+          <View style={styles.serviceCard}>
+            <View style={styles.serviceDetails}>
+              <View style={styles.serviceIconContainer}>
+                <Image 
+                  source={require('../../assets/icons/car-engine.png')}
+                  style={styles.serviceIcon}
+                />
+              </View>
+              <View style={styles.serviceInfo}>
+                <View style={styles.serviceRow}>
+                  <Text style={styles.serviceLabel}>Service:</Text>
+                  <Text style={styles.serviceValue}>Engine Tune-up</Text>
+                </View>
+                <View style={styles.serviceRow}>
+                  <Text style={styles.serviceLabel}>Vehicle:</Text>
+                  <Text style={styles.serviceValue}>Toyota Camry</Text>
+                </View>
+                <View style={styles.serviceRow}>
+                  <Text style={styles.serviceLabel}>Status:</Text>
+                  <Text style={styles.serviceValue}>Completed</Text>
+                </View>
+                <View style={styles.serviceRow}>
+                  <Text style={styles.serviceLabel}>Provider:</Text>
+                  <Text style={styles.serviceValue}>Master Garage</Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.serviceArrow}>
+                <Text style={styles.arrowText}></Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <ScrollView 
       contentContainerStyle={styles.scrollViewContainer}
       refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          // تخصيص مظهر مؤشر التحديث
-          tintColor="#000"
-          colors={["#000"]}
-          progressBackgroundColor="#fff"
-          progressViewOffset={40} // لجعل مؤشر التحديث يظهر تحت التابات
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >      
       <View style={styles.tabsContainer}>
         {['Trips', 'Vehicles', 'Drivers', 'Services'].map((tab) => (
           <TouchableOpacity
             key={tab}
-            style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]} // تمييز التبويب النشط
-            onPress={() => setActiveTab(tab)} // تحديث الحالة عند الضغط
+            style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]}
+            onPress={() => setActiveTab(tab)}
           >
             <Text style={[styles.tabText, activeTab === tab ? styles.activeTabText : styles.inactiveTabText]}>{tab}</Text>
           </TouchableOpacity>
         ))}
       </View>
+      {activeTab === 'Trips' && renderTripsTab()}
       {activeTab === 'Vehicles' && renderVehiclesTab()}
       {activeTab === 'Vehicles' && renderMaintenanceReport()}
       {activeTab === 'Drivers' && renderDriversTab()}
+      {activeTab === 'Services' && renderServicesTab()}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   vehicleImage: {
-    width: '70%', // اجعل الصورة تأخذ العرض الكامل
-    height: '70%', // اجعل الصورة تأخذ الارتفاع الكامل
+    width: '75%', // اجعل الصورة تأخذ العرض الكامل
+    height: '75%', // اجعل الصورة تأخذ الارتفاع الكامل
     borderRadius: 8, // إذا كنت تريد زوايا دائرية
     justifyContent: 'center',
     alignItems: 'center',
@@ -692,9 +998,9 @@ const styles = StyleSheet.create({
     marginRight: 20,
   },
   vehicleIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
@@ -767,6 +1073,9 @@ const styles = StyleSheet.create({
   vehicleName: {
     marginTop: 5,
     textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
   },
   driversSection: {
     width: '100%',
@@ -779,8 +1088,8 @@ const styles = StyleSheet.create({
     width: 120,
   },
   driverImage: {
-    width: 60,
-    height: 60,
+    width: 80,
+    height: 80,
     borderRadius: 30,
     borderWidth: 2,
     borderColor: '#eee',
@@ -798,37 +1107,217 @@ const styles = StyleSheet.create({
   },
   vehicleInfo: {
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    padding: 4,
-    borderRadius: 4,
-    width: '100%',
+    marginTop: 8,
   },
-  vehicleName: {
-    fontSize: 12,
+  vehicleDetails: {
+    fontSize: 14,
     color: '#666',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  deviceInfo: {
+    marginTop: 4,
+    padding: 4,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 4,
+  },
+  deviceName: {
+    fontSize: 13,
+    color: '#0066CC',
+    textAlign: 'center',
     fontWeight: '500',
   },
-  plateNumber: {
-    fontSize: 11,
-    color: '#888',
-    marginTop: 2,
-  },
-  noVehicle: {
+  serialNumber: {
     fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  noDevice: {
+    fontSize: 13,
     color: '#999',
-    fontStyle: 'italic',
+    //fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 4,
   },
   driversScroll: {
     marginBottom: 16,
   },
   driverIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
     overflow: 'hidden',
+  },
+  assignedVehicleInfo: {
+    marginTop: 4,
+    padding: 4,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 4,
+  },
+  assignedVehicleName: {
+    fontSize: 13,
+    color: '#0066CC',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  assignedVehiclePlate: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  noAssignedVehicle: {
+    fontSize: 13,
+    color: '#999',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  tripsSection: {
+    width: '100%',
+    padding: 16,
+  },
+  tripCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  tripDate: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#666',
+  },
+  tripDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tripIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 30,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  tripIcon: {
+    width: 30,
+    height: 30,
+    //tintColor: '#fff',
+  },
+  tripIconText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  tripInfo: {
+    flex: 1,
+  },
+  tripRow: {
+    flexDirection: 'row',
+    gap: 0,
+    marginBottom: 4,
+  },
+  tripLabel: {
+    width: 65,
+    fontSize: 11.5,
+    color: '#666',
+    fontWeight: '500',
+  },
+  tripValue: {
+    flex: 1,
+    fontSize: 11.5,
+    color: '#000',
+    fontWeight: '500',
+  },
+  tripArrow: {
+    padding: 8,
+  },
+  arrowText: {
+    color: '#5CE960',
+    fontSize: 25,
+  },
+  tripButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    gap: 8,
+  },
+  
+  twoThirdButton: {
+    flex: 2, // يأخذ ثلثي المساحة
+  },
+  
+  oneThirdButton: {
+    flex: 1, // يأخذ ثلث المساحة
+  },
+  servicesSection: {
+    width: '100%',
+    padding: 16,
+  },
+  serviceCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  serviceDate: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#666',
+  },
+  serviceDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  serviceIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 30,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  serviceIcon: {
+    width: 30,
+    height: 30,
+    //tintColor: '#fff',
+  },
+  serviceInfo: {
+    flex: 1,
+  },
+  serviceRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  serviceLabel: {
+    width: 70,
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  serviceValue: {
+    flex: 1,
+    fontSize: 12,
+    color: '#000',
+    fontWeight: '500',
+  },
+  serviceArrow: {
+    padding: 8,
   },
 });

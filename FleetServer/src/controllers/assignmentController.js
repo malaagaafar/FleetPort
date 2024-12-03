@@ -104,8 +104,44 @@ const getDriversAssignment = async (req, res) => {
     }
 };
 
+const getVehiclesAssignment = async (req, res) => {
+    try {
+        const vehicles = await sequelize.query(`
+            SELECT 
+                v.*,
+                COALESCE(d.name, '') as device_name,
+                COALESCE(d.model, '') as device_model,
+                COALESCE(dva.device_serial_number, '') as device_serial_number,
+                COALESCE(dva.created_at, null) as assignment_date
+            FROM 
+                vehicles v
+            LEFT JOIN device_vehicle_assignments dva ON v.id = dva.vehicle_id 
+            LEFT JOIN purchased_devices pd ON dva.device_serial_number = pd.serial_number
+            LEFT JOIN primary_devices d ON pd.device_id = d.id
+            WHERE 
+                v.user_id = :userId
+            ORDER BY 
+                v.id, dva.created_at
+        `, {
+            replacements: { 
+                userId: req.query.userId 
+            },
+            type: sequelize.QueryTypes.SELECT
+        });
+
+        res.status(200).json(vehicles);
+
+    } catch (error) {
+        console.error('Error fetching vehicles:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to fetch vehicles' 
+        });
+    }
+};
 
 module.exports = {
     driverVehiclesAssignment,
-    getDriversAssignment
+    getDriversAssignment,
+    getVehiclesAssignment
 }

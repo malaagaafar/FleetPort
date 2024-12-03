@@ -263,7 +263,8 @@ const assignSensorToDevice = async (req, res) => {
 const assignDeviceToVehicle = async (req, res) => {
     try {
         const { deviceSerial, vehicleId, userId } = req.body;
-        
+        console.log(req.body);
+        console.log(deviceSerial, vehicleId, userId);
         if (!deviceSerial || !vehicleId || !userId) {
             return res.status(400).json({
                 success: false,
@@ -323,4 +324,48 @@ const assignDeviceToVehicle = async (req, res) => {
     }
 };
 
-module.exports = { handlePurchase, getPurchasedDevices, getPurchasedSensors, getAvailableDevicesForSensor, assignSensorToDevice, assignDeviceToVehicle }; // تأكد من تصدير كائن يحتوي على الدالة
+const getAvailableDevicesForAssignment = async (req, res) => {
+    try {
+        const { userId } = req.query;
+        
+        const query = `
+            SELECT 
+                pd.serial_number,
+                pd.device_id,
+                d.name,
+                d.type,
+                d.model,
+                d.manufacturer,
+                d.image_url
+            FROM purchased_devices pd
+            JOIN primary_devices d ON pd.device_id = d.id
+            WHERE pd.user_id = :userId
+            AND NOT EXISTS (
+                SELECT 1 
+                FROM device_vehicle_assignments dva
+                WHERE dva.device_serial_number = pd.serial_number
+            )
+            ORDER BY pd.created_at DESC
+        `;
+
+        const devices = await sequelize.query(query, {
+            replacements: { userId },
+            type: sequelize.QueryTypes.SELECT
+        });
+
+        res.json({
+            success: true,
+            devices: devices
+        });
+
+    } catch (error) {
+        console.error('Error fetching available devices:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ أثناء جلب الأجهزة المتاحة',
+            error: error.message
+        });
+    }
+};
+
+module.exports = { handlePurchase, getPurchasedDevices, getPurchasedSensors, getAvailableDevicesForSensor, assignSensorToDevice, assignDeviceToVehicle, getAvailableDevicesForAssignment }; // تأكد من تصدير كائن يحتوي على الدالة

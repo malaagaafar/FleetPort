@@ -59,7 +59,7 @@ function LiveHeader() {
       </TouchableOpacity>
       <TouchableOpacity>
         <Image 
-          source={require('../../assets/icons/search.png')}
+          source={require('../../assets/icons/loupe.png')}
           style={{
             width: 24,
             height: 24,
@@ -206,30 +206,37 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="live"
         options={{
-          title: 'Live',  // يمكنك استخدام صورة الشعار بدلاً من النص
+          title: 'Live',
           headerTitleStyle: {
-            fontFamily: 'Spantaran',  // تأكد من تحميل الخط الصحيح
+            fontFamily: 'Spantaran',
             fontSize: 24,
             fontWeight: 'bold',
             color: '#000033',
-            marginLeft: 0,  // إضافة هذا السطر
-            paddingLeft: 2, // إضافة هذا السطر
+            marginLeft: 0,
+            paddingLeft: 2,
           },
           headerRight: () => <LiveHeader />,
+          headerTransparent: true,
+          headerBackground: () => (
+            <View style={{ 
+              flex: 1,
+              backgroundColor: 'rgba(255, 255, 255, 0.0)'
+            }} />
+          ),
           tabBarIcon: ({ focused }) => (
             <Image 
-            source={focused 
-              ? require('../../assets/icons/gps-aa.png')
-              : require('../../assets/icons/gps-o.png')
-            }
-            style={{
-              width: 24,
-              height: 24,
-            }}
-          />
+              source={focused 
+                ? require('../../assets/icons/gps-aa.png')
+                : require('../../assets/icons/gps-o.png')
+              }
+              style={{
+                width: 24,
+                height: 24,
+              }}
+            />
           ),
           tabBarLabel: 'Live',
-          tabBarActiveTintColor: '#08DF5E',  // لون أخضر عند التنشيط
+          tabBarActiveTintColor: '#08DF5E',
           tabBarLabelStyle: {
             fontWeight: 'bold'
           },

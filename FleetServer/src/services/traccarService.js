@@ -1,5 +1,4 @@
 const axios = require('axios');
-const driverController = require('../controllers/driverController');
 
 const traccarApi = axios.create({
   baseURL: process.env.TRACCAR_API_URL,
