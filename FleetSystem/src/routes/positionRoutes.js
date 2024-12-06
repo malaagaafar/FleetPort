@@ -1,14 +1,13 @@
 const express = require('express');
-const authMiddleware = require('../middleware/auth');
-const PositionController = require('../controllers/positionController');
+//const { authenticateToken } = require('../middleware/auth');
+const positionController = require('../controllers/positionController');
 
 const router = express.Router();
-const positionController = new PositionController();
 
-// تطبيق middleware الأمان على جميع المسارات
-router.use(authMiddleware);
+// تطبيق middleware المصادقة على جميع المسارات
+//router.use(authenticateToken);
 
-// المسارات كما هي...
+// المسارات
 router.post('/positions', positionController.savePositions);
 router.get('/positions/last/:deviceId', positionController.getLastPosition);
 router.get('/positions/range', positionController.getPositionsInTimeRange);

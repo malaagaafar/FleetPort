@@ -4,6 +4,7 @@ import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch } from 'react-redux'; // إضافة هذا السطر
 import { setCredentials } from '../../store/slices/authSlice'; // تأكد من مسار الاستيراد الصحيح
+import { KeyboardWrapper } from '../../components/KeyboardWrapper';
 
 export default function LoginScreen() {
     const dispatch = useDispatch(); // إضافة هذا السطر
@@ -52,45 +53,47 @@ export default function LoginScreen() {
     };
     
     return (
-        <View style={styles.container}>
-            <View style={styles.logoContainer}>
-                <Text style={styles.logoText}>cPORT</Text>
-                <Text style={styles.subText}>FleetManager</Text>
-            </View>
+        <KeyboardWrapper>
+            <View style={styles.container}>
+                <View style={styles.logoContainer}>
+                    <Text style={styles.logoText}>cPORT</Text>
+                    <Text style={styles.subText}>FleetManager</Text>
+                </View>
 
-            <View style={styles.formContainer}>
-                <Text style={styles.label}>Email or Phone Number</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Email or Phone Number"
-                    autoCapitalize="none"
-                    value={formData.email}
-                    onChangeText={(text) => setFormData({ ...formData, email: text })}
-                    keyboardType="email-address"
-                />
+                <View style={styles.formContainer}>
+                    <Text style={styles.label}>Email or Phone Number</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Email or Phone Number"
+                        autoCapitalize="none"
+                        value={formData.email}
+                        onChangeText={(text) => setFormData({ ...formData, email: text })}
+                        keyboardType="email-address"
+                    />
 
-                <Text style={styles.label}>Password</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Password"
-                    secureTextEntry
-                    value={formData.password}
-                    onChangeText={(text) => setFormData({ ...formData, password: text })}
-                />
+                    <Text style={styles.label}>Password</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Password"
+                        secureTextEntry
+                        value={formData.password}
+                        onChangeText={(text) => setFormData({ ...formData, password: text })}
+                    />
 
-                <TouchableOpacity 
-                    style={styles.loginButton} 
-                    onPress={handleLogin}
-                >
-                    <Text style={styles.loginButtonText}>Login</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity 
+                        style={styles.loginButton} 
+                        onPress={handleLogin}
+                    >
+                        <Text style={styles.loginButtonText}>Login</Text>
+                    </TouchableOpacity>
 
-                <View style={styles.signupContainer}>
-                    <Text style={styles.signupText}>Do not have an account? </Text>
-                    <Link href="./sign-up" style={styles.signupLink}>Sign Up</Link>
+                    <View style={styles.signupContainer}>
+                        <Text style={styles.signupText}>Do not have an account? </Text>
+                        <Link href="./sign-up" style={styles.signupLink}>Sign Up</Link>
+                    </View>
                 </View>
             </View>
-        </View>
+        </KeyboardWrapper>
     );
 }
 

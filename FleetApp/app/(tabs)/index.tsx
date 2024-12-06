@@ -55,13 +55,25 @@ const fetchVehicles = async () => {
     }
   };
 
+  const formatDateTime = (dateTimeString) => {
+    if (!dateTimeString) return null;
+    const date = new Date(dateTimeString);
+    return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+  };
+
   useEffect(() => {
     fetchDrivers();
     fetchVehicles();
     fetchVehicleLocations();
 
     // تحديث المواقع كل دقيقة
-    const locationInterval = setInterval(fetchVehicleLocations, 60000);
+    const locationInterval = setInterval(fetchVehicleLocations, 30000);
     return () => clearInterval(locationInterval);
   }, []);
 
@@ -417,20 +429,7 @@ const getStatusStyle = (status: string) => {
         {/* Vehicles List */}
         <View style={styles.vehiclesSection}>
           {vehicleLocations?.map(vehicle => (
-           /* <TouchableOpacity key={vehicle.id} style={styles.vehicleCard}>
-              <View style={styles.vehicleStatusContainer}>
-                <View style={[styles.statusIndicator, 
-                  { backgroundColor: vehicle.status === 'active' ? '#4CAF50' : '#999' }]} />
-                <Text style={styles.statusText}>{vehicle.status}</Text>
-              </View>
-              <View style={styles.vehicleInfo}>
-                <Text style={styles.vehicleDetail}>Vehicle: {vehicle.vehicle}</Text>
-                <Text style={styles.vehicleDetail}>Location: {vehicle.location}</Text>
-                <Text style={styles.vehicleDetail}>Driver: {vehicle.driver}</Text>
-                <Text style={styles.vehicleDetail}>Event: {vehicle.event}</Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={24} color="#999" />
-            </TouchableOpacity>*/
+
             <TouchableOpacity key={vehicle.id} style={styles.vehicleCard}>
             <View style={styles.vehicleInfo}>
               <View style={styles.statusIconsContainer}>
@@ -442,8 +441,15 @@ const getStatusStyle = (status: string) => {
                 style={styles.statusIcon}
                 />
                 </View>
-                {/*<View style={[styles.statusIndicator, 
-                  { backgroundColor: vehicle.status === 'active' ? '#4CAF50' : '#999' }]} />*/}
+                <Text style={styles.statusTime}>
+                  {vehicle.status === 'online' 
+                    ? (vehicle.hoursSinceStatus < 0.016 ? `Active for ${Math.round(vehicle.hoursSinceStatus *60* 60)}s` : // أقل من دقيقتين (2/60 = 0.034)
+                      vehicle.hoursSinceStatus < 1 ? `Active for ${Math.round(vehicle.hoursSinceStatus * 60)}m` : // أقل من ساعة
+                      `Active for ${Math.round(vehicle.hoursSinceStatus)}h`) // ساعات
+                    : (vehicle.hoursSinceStatus < 1 
+                        ? `Inactive for ${Math.round(vehicle.hoursSinceStatus * 60)}m` // أقل من ساعة
+                        : `Inactive for ${Math.round(vehicle.hoursSinceStatus)}h`)}
+                </Text>
               </View>
               <View style={styles.detailsContainer}>
                 <View style={styles.detailRow}>
@@ -464,7 +470,22 @@ const getStatusStyle = (status: string) => {
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.label}>Driver:</Text>
-                  <Text style={styles.value}>{vehicle.driver}</Text>
+                  <Text style={styles.value}>
+                    {vehicle.currentDriver.name}
+                    {vehicle.currentDriver.name !== 'None' && vehicle.currentDriver.name !== 'Unknown' && vehicle.currentDriver.loginTime && (
+                      <Text style={styles.vvehicleDetails}>
+                        {'\n'}Login: {vehicle.currentDriver.loginTime}
+                        {'\n'}Since ({vehicle.currentDriver.hoursActive} hours)
+                        {'\n'}Vehicle started at: {vehicle.currentDriver.statusTime}
+                      </Text>
+                    )}
+                    {vehicle.currentDriver.name == 'Unknown' && vehicle.currentDriver.statusTime && (
+                      <Text style={styles.vvehicleDetails}>
+                        {'\n'}Vehicle started at: {vehicle.currentDriver.statusTime}
+                        {'\n'}Since ({vehicle.currentDriver.hoursActive} hours)
+                      </Text>
+                    )}
+                  </Text>
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.label}>Event:</Text>
@@ -483,24 +504,12 @@ const getStatusStyle = (status: string) => {
       {/* Driver Score Section */}
       <View style={styles.driversSection}>
         <Text style={styles.driverScoreTitle}>Driver Score: <Text style={styles.driverScoreHint}>select a driver to show their score:</Text></Text>
-        {/*<ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.driversScroll}>
-          {drivers.map(driver => (
-            <View key={driver.id} style={styles.driverScore}>
-              <View style={styles.driverAvatar}>
-                <Text style={styles.driverInitial}>{driver.name[0]}</Text>
-              </View>
-              <Text style={styles.driverName}>{driver.name}</Text>
-            </View>
-          ))}
-          <TouchableOpacity style={styles.addDriverButton}>
-            <MaterialIcons name="add" size={24} color="#007AFF" />
-            <Text style={styles.addDriverText}>Add Driver</Text>
-          </TouchableOpacity>
-        </ScrollView>*/}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.driversScroll}>
             {drivers.map((driver, index) => (
               <View key={index} style={styles.driverCard}>
-                <View style={[styles.driverIcon, getStatusStyle(driver.status)]}>
+                <View style={[styles.driverIcon,
+                { borderColor: driver.current_vehicle_id !== null ? '#4CD964' : '#999',
+                  borderWidth: driver.current_vehicle_id !== null ? 1.5 : 0.5}]}>
                   <Image 
                     source={{ uri: driver.profile_image || 'https://your-default-image.png' }}
                     style={styles.driverImage}
@@ -509,6 +518,21 @@ const getStatusStyle = (status: string) => {
                 <View style={styles.driverInfo}>
                   <Text style={styles.driverName}>
                     {driver.first_name} {driver.last_name}
+
+                      {driver.vehicle_name ? (
+                        <View style={styles.assignedVehicleInfo}>
+                          <Text style={styles.assignedVehicleName}>
+                            {driver.vehicle_name}
+                        </Text>
+                        {driver.current_vehicle_id !== null && (
+                        <Text style={styles.assignedVehiclePlate}>
+                              Login: {formatDateTime(driver.updated_at)}
+                              </Text>
+                          )}
+                        </View>
+                      ) : (
+                        <Text style={styles.noAssignedVehicle}>No vehicle assigned</Text>
+                      )}
                   </Text>
                 </View>
               </View>
@@ -650,7 +674,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   driverName: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#000',
     textAlign: 'center',
@@ -1058,5 +1082,11 @@ const styles = StyleSheet.create({
   markerIcon: {
     width: 20,
     height: 20,
+  },
+  statusTime: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4
   },
 });

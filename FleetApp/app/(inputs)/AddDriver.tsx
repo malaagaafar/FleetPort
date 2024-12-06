@@ -7,6 +7,7 @@ import api from '@/config/api';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import DropDownPicker from 'react-native-dropdown-picker';
+import { KeyboardWrapper } from '../../components/KeyboardWrapper';
 
 const DriverForm = () => {
     const userId = useSelector((state: RootState) => state.auth.user.id);
@@ -79,7 +80,7 @@ const DriverForm = () => {
     };
 
     return (
-        <>
+        <KeyboardWrapper>
             <Stack.Screen
                 options={{
                     headerShown: true,
@@ -225,7 +226,8 @@ const DriverForm = () => {
                     </View>
                 </View>
             </ScrollView>
-        </>
+        </KeyboardWrapper>
+
     );
 };
 

@@ -4,14 +4,30 @@ const positionService = require('./positionService');
 class SimulatorService {
     constructor() {
         this.devices = [
-            { id: 9780, name: '7', uniqueId: '123213' },
-            { id: 10143, name: '6', uniqueId: '123498' }
+            { id: 9780, name: '7', uniqueId: '123213', enabled: true },
+            { id: 10143, name: '6', uniqueId: '123498', enabled: true }
         ];
         this.positionIdCounter = null;
         this.centerLat = 43.7;
         this.centerLng = -79.42;
         this.simulationInterval = 60000;
         this.timer = null;
+    }
+
+    enableDevice(deviceId) {
+        const device = this.devices.find(d => d.id === deviceId);
+        if (device) {
+            device.enabled = true;
+            console.log(`Device ${deviceId} enabled for position updates`);
+        }
+    }
+
+    disableDevice(deviceId) {
+        const device = this.devices.find(d => d.id === deviceId);
+        if (device) {
+            device.enabled = false;
+            console.log(`Device ${deviceId} disabled for position updates`);
+        }
     }
 
     async initialize() {
@@ -68,12 +84,16 @@ class SimulatorService {
                 const positions = [];
                 
                 for (const device of this.devices) {
-                    const position = this.generateRandomPosition(device.id);
-                    positions.push(position);
+                    if (device.enabled) {
+                        const position = this.generateRandomPosition(device.id);
+                        positions.push(position);
+                    }
                 }
 
-                await positionService.savePositions(positions);
-                console.log(`Generated and saved ${positions.length} simulated positions`);
+                if (positions.length > 0) {
+                    await positionService.savePositions(positions);
+                    console.log(`Generated and saved ${positions.length} simulated positions`);
+                }
                 
             } catch (error) {
                 console.error('Error in simulation:', error);

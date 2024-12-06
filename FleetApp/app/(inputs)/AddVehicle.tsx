@@ -8,6 +8,7 @@ import { RootState } from '@/store/store';
 import api from '@/config/api';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
+import { KeyboardWrapper } from '../../components/KeyboardWrapper';
 
 const VehicleForm = () => {
     const [open, setOpen] = useState(false);
@@ -93,7 +94,7 @@ const VehicleForm = () => {
     };
 
     return (
-        <>
+        <KeyboardWrapper>
             <Stack.Screen
                 options={{
                     headerShown: true,
@@ -236,7 +237,7 @@ const VehicleForm = () => {
                     <Button title="Submit" onPress={handleSubmit} />
                 </View>
             </ScrollView>
-        </>
+        </KeyboardWrapper>
     );
 };
 

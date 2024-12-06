@@ -396,7 +396,7 @@ export default function ManageScreen() {
           <View style={styles.tripButtonsRow}>
             <TouchableOpacity 
               style={[styles.actionButton, styles.grayButton, styles.twoThirdButton]} 
-              onPress={() => {}}
+              onPress={() => router.push('/(inputs)/ScheduleTrip')}
             >
               <Text style={styles.grayButtonText}>Schedule a New Trip</Text>
             </TouchableOpacity>

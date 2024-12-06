@@ -9,12 +9,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 0.5 * 60 * 1000, // البيانات تبقى صالحة لمدة 5 دقائق
-      cacheTime: 1 * 60 * 1000, // تبقى في الذاكرة لمدة 10 دقائق
+      staleTime: 0.5 * 60 * 1000,
+      cacheTime: 1 * 60 * 1000,
     },
   },
 });
-
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,13 +34,12 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-    <Provider store={store}>
+      <Provider store={store}>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
         </Stack>
-    </Provider>
+      </Provider>
     </QueryClientProvider>
-
   );
 }

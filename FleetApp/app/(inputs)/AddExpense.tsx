@@ -1,9 +1,10 @@
 import { View, StyleSheet, TouchableOpacity, Image, Text } from 'react-native';
 import { Stack, router } from 'expo-router';
+import { KeyboardWrapper } from '../../components/KeyboardWrapper';
 
 export default function AddExpense() {
   return (
-    <>
+    <KeyboardWrapper>
       <Stack.Screen 
         options={{    
           headerShown: true,
@@ -29,7 +30,7 @@ export default function AddExpense() {
       <View style={styles.container}>
         <Text>Add Expense Screen Content</Text>
       </View>
-    </>
+    </KeyboardWrapper>
   );
 }
 
