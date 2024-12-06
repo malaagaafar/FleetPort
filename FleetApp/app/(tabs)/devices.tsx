@@ -213,17 +213,17 @@ const renderPurchasedDeviceCard = (device: any) => {
           {device.manufacturer} - {device.model}
         </Text>
         <View style={styles.serialNumberContainer}>
-          <Text style={styles.serialLabel}>الرقم التسلسلي:</Text>
+          <Text style={styles.serialLabel}>Serial Number:</Text>
           <Text style={styles.serialNumber}>{device.serial_number}</Text>
         </View>
         <View style={styles.assignmentInfo}>
           <Text style={styles.assignmentStatus}>
-            الحالة: {device.assigned_to_vehicle ? 'مرتبط' : 'غير مرتبط'}
+            Status: {device.assigned_to_vehicle ? 'Connected' : 'Not Connected'}
           </Text>
           {device.assigned_to_vehicle && device.vehicle_plate_number && (
             <Text style={styles.assignedDevice}>
-              مرتبط بالمركبة: {device.vehicle_name}{'\n'}
-              رقم اللوحة: {device.vehicle_plate_number}
+              Connected to Vehicle: {device.vehicle_name}{'\n'}
+              Plate Number: {device.vehicle_plate_number}
             </Text>
           )}
           {!device.assigned_to_vehicle && (
@@ -237,14 +237,14 @@ const renderPurchasedDeviceCard = (device: any) => {
                 }
               })}
             >
-              <Text style={styles.assignButtonText}>ربط بمركبة</Text>
+              <Text style={styles.assignButtonText}>Connect to Vehicle</Text>
             </TouchableOpacity>
           )}
 
         </View>
         <View style={styles.traccarStatus}>
           <Text style={styles.statusLabel}>
-            حالة التتبع: {device.traccar_id ? 'متصل' : 'غير متصل'}
+            Traccar Status: {device.traccar_id ? 'Connected' : 'Not Connected'}
           </Text>
           
           {!device.traccar_id && (
@@ -254,7 +254,7 @@ const renderPurchasedDeviceCard = (device: any) => {
               onPress={() => handleConnectToTraccar(device.serial_number)}
             >
               <Text style={styles.connectButtonText}>
-                {isConnecting ? 'جاري الربط...' : 'Connect'}
+                {isConnecting ? 'Connecting...' : 'Connect'}
               </Text>
             </TouchableOpacity>
           )}
@@ -270,7 +270,7 @@ const renderPurchasedDeviceCard = (device: any) => {
 };
 
 const renderPurchasedSensorCard = (sensor: any) => {
-  // نفترض أن كل مستشعر له رقم تسلسلي واحد الآن
+    // نفترض أن كل مستشعر له رقم تسلسلي واحد الآن
   const uniqueKey = `sensor-${sensor.id}-${sensor.first_purchase_date}-${sensor.serial_number}`;
   
   return (
@@ -289,16 +289,16 @@ const renderPurchasedSensorCard = (sensor: any) => {
           {sensor.manufacturer} - {sensor.model}
         </Text>
         <View style={styles.serialNumberContainer}>
-          <Text style={styles.serialLabel}>الرقم التسلسلي:</Text>
+          <Text style={styles.serialLabel}>Serial Number:</Text>
           <Text style={styles.serialNumber}>{sensor.serial_number}</Text>
         </View>
         <View style={styles.assignmentInfo}>
           <Text style={styles.assignmentStatus}>
-            الحالة: {sensor.assigned ? 'مرتبط' : 'غير مرتبط'}
+            Status: {sensor.assigned ? 'Connected' : 'Not Connected'}
           </Text>
           {sensor.assigned && sensor.device_serial_number && (
             <Text style={styles.assignedDevice}>
-              مرتبط بالجهاز: {sensor.device_serial_number}
+              Connected to Device: {sensor.device_serial_number}
             </Text>
           )}
           {!sensor.assigned && (
@@ -312,7 +312,7 @@ const renderPurchasedSensorCard = (sensor: any) => {
                 }
               })}
             >
-              <Text style={styles.assignButtonText}>ربط بجهاز</Text>
+              <Text style={styles.assignButtonText}>Connect to Device</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -332,7 +332,7 @@ const renderContent = () => {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0066CC" />
-          <Text style={styles.loadingText}>جاري تحميل الأجهزة...</Text>
+          <Text style={styles.loadingText}>Loading Your Devices...</Text>
         </View>
       );
     }
@@ -341,7 +341,7 @@ const renderContent = () => {
       return (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
-            {devicesError?.message || sensorsError?.message || 'حدث خطأ في جلب البيانات'}
+            {devicesError?.message || sensorsError?.message || 'An error occurred while fetching data'}
           </Text>
           <TouchableOpacity 
             style={styles.retryButton} 
@@ -350,7 +350,7 @@ const renderContent = () => {
               queryClient.invalidateQueries(['purchasedSensors', userId]);
             }}
           >
-            <Text style={styles.retryButtonText}>إعادة المحاولة</Text>
+            <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
       );
@@ -362,7 +362,7 @@ const renderContent = () => {
     if (!hasDevices && !hasSensors) {
       return (
         <View style={styles.noDataContainer}>
-          <Text style={styles.noDataText}>لا توجد أجهزة أو مستشعرات مشتراة</Text>
+          <Text style={styles.noDataText}>No devices or sensors purchased</Text>
         </View>
       );
     }
@@ -372,7 +372,7 @@ const renderContent = () => {
       <ScrollView style={styles.devicesContainer}>
         {hasDevices && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>الأجهزة المشتراة</Text>
+            <Text style={styles.sectionTitle}>Purchased Devices</Text>
             <View style={styles.devicesGrid}>
               {purchasedDevices.map(device => renderPurchasedDeviceCard(device))}
             </View>
@@ -381,7 +381,7 @@ const renderContent = () => {
         
         {hasSensors && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>المستشعرات المشتراة</Text>
+            <Text style={styles.sectionTitle}>Purchased Sensors</Text>
             <View style={styles.devicesGrid}>
               {purchasedSensors.map(sensor => renderPurchasedSensorCard(sensor))}
             </View>
@@ -427,7 +427,7 @@ const renderContent = () => {
         setError('No data received from server');
       }
     } catch (err) {
-      setError('حدث خطأ في جلب البيانات');
+      setError('An error occurred while fetching data');
       console.error('Error fetching devices:', err);
     } finally {
       setLoading(false);
@@ -453,7 +453,7 @@ const renderContent = () => {
         setError('No data received from server');
       }
     } catch (err) {
-      setError('حدث خطأ في جلب المستشعرات');
+      setError('An error occurred while fetching sensors');
       console.error('Error fetching sensors:', err);
     } finally {
       setLoading(false);
@@ -1065,13 +1065,13 @@ section: {
   assignmentStatus: {
     fontSize: 14,
     color: '#666',
-    textAlign: 'right',
+    textAlign: 'left',
   },
   assignedDevice: {
     fontSize: 14,
     color: '#0066CC',
     marginTop: 4,
-    textAlign: 'right',
+    textAlign: 'left',
   },
   assignButton: {
     backgroundColor: '#0066CC',
@@ -1084,6 +1084,7 @@ section: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+    textAlign: 'center',
   },
   disabledButton: {
     backgroundColor: '#cccccc',

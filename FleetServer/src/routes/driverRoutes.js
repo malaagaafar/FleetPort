@@ -2,19 +2,14 @@
 const express = require('express');
 const router = express.Router();
 const driverController = require('../controllers/driverController');
-//const { createMulter } = require('../utils/uploadManager');
 
-// استخدام multer بشكل غير متزامن
-/*router.post('/upload', async (req, res, next) => {
-    try {
-        const upload = await createMulter();
-        upload.single('profile_image')(req, res, next);
-    } catch (error) {
-        next(error);
-    }
-});*/
+// مسارات تسجيل الدخول والمركبات
+router.post('/login', driverController.loginDriver);
+router.post('/vehicle/login', driverController.vehicleLogin);
+router.post('/vehicle/logout', driverController.vehicleLogout);
+router.get('/home', driverController.getHomeData);
 
-// راوتر خاص بسائقي الشركات (يتطلب مصادقة)
+// المسارات الموجودة مسبقاً
 router.post('/company', driverController.createCompanyDriver);
 router.get('/company', driverController.getCompanyDrivers);
 router.get('/company/:id', driverController.getCompanyDriver);

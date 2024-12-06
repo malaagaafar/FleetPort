@@ -3,6 +3,8 @@ const { createTraccarDevice } = require('../services/traccarService');
 const TraccarDeviceConfig = require('../models/TraccarDeviceConfig');
 const { PurchasedDevice } = require('../models/Purchase');
 const axios = require('axios');
+//const FleetSystemService = require('../services/fleetSystemService');
+//const fleetSystem = new FleetSystemService();
 
 const getDevices = async (req, res) => {
     try {
@@ -216,10 +218,49 @@ const updateDeviceTraccarStatus = async (req, res) => {
   }
 };
 
+/*const getDeviceInfo = async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+    
+    // الحصول على معلومات الجهاز من قاعدة بيانات السيرفر
+    const deviceInfo = await DeviceModel.findById(deviceId);
+    
+    // الحصول على آخر موقع من FleetSystem
+    const lastPosition = await fleetSystem.getLastPosition(deviceId);
+    
+    res.json({
+      ...deviceInfo,
+      lastPosition
+    });
+  } catch (error) {
+    console.error('Error in getDeviceInfo:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const getDeviceHistory = async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+    const { startTime, endTime } = req.query;
+    
+    const positions = await fleetSystem.getPositionsInTimeRange(
+      deviceId,
+      startTime,
+      endTime
+    );
+    
+    res.json(positions);
+  } catch (error) {
+    console.error('Error in getDeviceHistory:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};*/
 
 module.exports = {
     getDevices,
     getSensors,
     connectToTraccar,
-    updateDeviceTraccarStatus
+    updateDeviceTraccarStatus,
+    //getDeviceInfo,
+    //getDeviceHistory
 };

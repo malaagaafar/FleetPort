@@ -21,7 +21,7 @@ function HeaderRight() {
       </TouchableOpacity>
       <TouchableOpacity onPress={() => router.push('../(screens)/FinancialScreen')}>
         <Image 
-          source={require('../../assets/icons/coin.png')}
+          source={require('../../assets/icons/analytics.png')}
           style={{
             width: 24,
             height: 24,

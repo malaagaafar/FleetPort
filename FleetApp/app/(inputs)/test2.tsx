@@ -1,106 +1,152 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { useState } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import MapView, { Marker } from 'react-native-maps';
 
-export default function LiveScreen() {
-  const [activeTab, setActiveTab] = useState('Vehicles'); // حالة لتتبع التبويب النشط
+export default function HomeScreen() {
+  const router = useRouter();
 
-  // بيانات افتراضية للمركبات النشطة
-  const activeVehicles = [
+  const fleetSummary = {
+    inactiveVehicles: 2,
+    activeVehicles: 5,
+    activeTrips: 4,
+    alerts: 10,
+    upcomingEvents: 8,
+    tripRequests: 1
+  };
+
+  const vehicles = [
     {
       id: 1,
+      status: 'active',
       vehicle: 'Volvo 320C',
-      location: 'GTA, North York 364L168',
-      driver: 'Youssef Mohamed',
-      event: 'On Trip 304',
-      status: 'Active'
+      location: 'GTA, North York 36.1L/68',
+      driver: 'Yasser Mohamed',
+      event: 'On Trip 304'
     },
     {
       id: 2,
-      vehicle: 'Volvo 320C',
-      location: 'GTA, North York 364L168',
-      driver: 'Youssef Mohamed',
-      event: 'On Trip 304',
-      status: 'Active'
-    },
-    {
-      id: 3,
-      vehicle: 'Volvo 320C',
-      location: 'GTA, North York 364L168',
-      driver: 'Youssef Mohamed',
-      event: 'On Trip 304',
-      status: 'Active'
-    },
-    {
-      id: 4,
-      vehicle: 'Volvo 320C',
-      location: 'GTA, North York 364L168',
-      driver: 'Youssef Mohamed',
-      event: 'On Trip 304',
-      status: 'Active'
-    },
+      status: 'inactive',
+      vehicle: 'Mercedes 250C',
+      location: 'Parking lot 1',
+      driver: 'Ali Ahmed',
+      event: 'Parked'
+    }
+  ];
+
+  const drivers = [
+    { id: 1, name: 'Yasser G.', score: 4.8 },
+    { id: 2, name: 'Yasser G.', score: 4.5 },
+    { id: 3, name: 'Yasser G.', score: 4.7 },
+    { id: 4, name: 'Yasser G.', score: 4.6 }
   ];
 
   return (
-    <View style={styles.container}>
-      {/* شريط التبويب */}
-      <View style={styles.tabsContainer}>
-        {['Vehicles', 'Trips'].map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[
-              styles.tab,
-              activeTab === tab ? styles.activeTab : styles.inactiveTab
-            ]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === tab ? styles.activeTabText : styles.inactiveTabText
-              ]}
-            >
-              {tab}
-            </Text>
+    <ScrollView style={styles.container}>
+      {/* Header with Logo and Icons */}
+
+      {/* Fleet Summary */}
+      <View style={styles.summarySection}>
+        <Text style={styles.sectionTitle}>Fleet Summary</Text>
+        <View style={styles.summaryGrid}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNumber}>{fleetSummary.inactiveVehicles}</Text>
+            <Text style={styles.summaryLabel}>Inactive{'\n'}Vehicles</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNumber}>{fleetSummary.activeVehicles}</Text>
+            <Text style={styles.summaryLabel}>Active{'\n'}Vehicles</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNumber}>{fleetSummary.activeTrips}</Text>
+            <Text style={styles.summaryLabel}>Active{'\n'}Trips</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNumber}>{fleetSummary.alerts}</Text>
+            <Text style={styles.summaryLabel}>Alerts</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNumber}>{fleetSummary.upcomingEvents}</Text>
+            <Text style={styles.summaryLabel}>Upcoming{'\n'}Events</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryNumber}>{fleetSummary.tripRequests}</Text>
+            <Text style={styles.summaryLabel}>Trip{'\n'}Request</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Map Section */}
+      <View style={styles.mapContainer}>
+        <MapView
+          style={styles.map}
+          initialRegion={{
+            latitude: 43.7184,
+            longitude: -79.5181,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+        >
+          {vehicles.map((vehicle) => (
+            <Marker
+              key={vehicle.id}
+              coordinate={{
+                latitude: 43.7184,
+                longitude: -79.5181,
+              }}
+              title={vehicle.vehicle}
+              description={vehicle.driver}
+            />
+          ))}
+        </MapView>
+      </View>
+
+      {/* Vehicles List */}
+      <View style={styles.vehiclesSection}>
+        {vehicles.map(vehicle => (
+          <TouchableOpacity key={vehicle.id} style={styles.vehicleCard}>
+            <View style={[styles.statusIndicator, 
+              { backgroundColor: vehicle.status === 'active' ? '#4CAF50' : '#999' }]} />
+            <View style={styles.vehicleInfo}>
+              <Text style={styles.vehicleTitle}>Vehicle: {vehicle.vehicle}</Text>
+              <Text style={styles.vehicleDetail}>Location: {vehicle.location}</Text>
+              <Text style={styles.vehicleDetail}>Driver: {vehicle.driver}</Text>
+              <Text style={styles.vehicleDetail}>Event: {vehicle.event}</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#999" />
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* قائمة المركبات */}
-      <ScrollView style={styles.listContainer}>
-        {activeVehicles.map((vehicle) => (
-          <TouchableOpacity key={vehicle.id} style={styles.vehicleCard}>
-            <View style={styles.vehicleInfo}>
-              <View style={styles.statusIconContainer}>
-                <View style={styles.statusIcon}>
-                  <Text style={styles.statusText}>{vehicle.status}</Text>
-                </View>
+      {/* Driver Scores */}
+      <View style={styles.driversSection}>
+        <Text style={styles.sectionTitle}>Driver Score:</Text>
+        <Text style={styles.driverScoreHint}>select a driver to show their score:</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.driversScroll}>
+          {drivers.map(driver => (
+            <View key={driver.id} style={styles.driverScore}>
+              <View style={styles.driverAvatar}>
+                <Text style={styles.driverInitial}>{driver.name[0]}</Text>
               </View>
-              <View style={styles.detailsContainer}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.label}>Vehicle:</Text>
-                  <Text style={styles.value}>{vehicle.vehicle}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.label}>Location:</Text>
-                  <Text style={styles.value}>{vehicle.location}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.label}>Driver:</Text>
-                  <Text style={styles.value}>{vehicle.driver}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.label}>Event:</Text>
-                  <Text style={styles.value}>{vehicle.event}</Text>
-                </View>
-              </View>
-              <TouchableOpacity style={styles.arrowContainer}>
-                <Text style={styles.arrowText}>▶</Text>
-              </TouchableOpacity>
+              <Text style={styles.driverName}>{driver.name}</Text>
+              <Text style={styles.driverScoreNumber}>{driver.score}</Text>
             </View>
+          ))}
+          <TouchableOpacity style={styles.addDriverButton}>
+            <MaterialIcons name="add" size={24} color="#007AFF" />
+            <Text style={styles.addDriverText}>Add Driver</Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </View>
+
+      {/* Maintenance Report Section */}
+      <View style={styles.maintenanceSection}>
+        <Text style={styles.sectionTitle}>Maintenance Report</Text>
+        {/* Add maintenance report content here */}
+      </View>
+    </ScrollView>
   );
 }
 
@@ -109,88 +155,144 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  tabsContainer: {
+  header: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    paddingTop: 50,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
+  logo: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  headerIcons: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  activeTab: {
-    backgroundColor: '#000',
+  iconSpace: {
+    marginHorizontal: 15,
   },
-  inactiveTab: {
-    backgroundColor: '#fff',
+  summarySection: {
+    padding: 15,
   },
-  tabText: {
+  sectionTitle: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
+    marginBottom: 15,
   },
-  activeTabText: {
-    color: '#fff',
+  summaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
-  inactiveTabText: {
-    color: '#000',
+  summaryItem: {
+    width: '16%',
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  listContainer: {
-    flex: 1,
-    padding: 16,
+  summaryNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  summaryLabel: {
+    fontSize: 12,
+    textAlign: 'center',
+    color: '#666',
+  },
+  mapContainer: {
+    height: 200,
+    backgroundColor: '#f0f0f0',
+    marginBottom: 15,
+    overflow: 'hidden',
+  },
+  map: {
+    width: '100%',
+    height: '100%',
+  },
+  vehiclesSection: {
+    padding: 15,
   },
   vehicleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
     backgroundColor: '#fff',
     borderRadius: 8,
-    marginBottom: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#eee',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  statusIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 15,
   },
   vehicleInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusIconContainer: {
-    marginRight: 16,
-  },
-  statusIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#021037',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statusText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  detailsContainer: {
     flex: 1,
   },
-  detailRow: {
-    flexDirection: 'row',
+  vehicleTitle: {
+    fontSize: 16,
+    fontWeight: '500',
     marginBottom: 4,
   },
-  label: {
-    width: 70,
+  vehicleDetail: {
     fontSize: 14,
     color: '#666',
-    fontWeight: '500',
+    marginBottom: 2,
   },
-  value: {
-    flex: 1,
+  driversSection: {
+    padding: 15,
+  },
+  driverScoreHint: {
     fontSize: 14,
-    color: '#000',
-    fontWeight: '500',
-  },
-  arrowContainer: {
-    padding: 8,
-  },
-  arrowText: {
     color: '#666',
-    fontSize: 18,
+    marginBottom: 15,
+  },
+  driversScroll: {
+    flexDirection: 'row',
+  },
+  driverScore: {
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  driverAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 5,
+  },
+  driverInitial: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  driverName: {
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  driverScoreNumber: {
+    fontSize: 14,
+    color: '#666',
+  },
+  addDriverButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+  },
+  addDriverText: {
+    color: '#007AFF',
+    fontSize: 14,
+    marginTop: 5,
+  },
+  maintenanceSection: {
+    padding: 15,
   },
 });

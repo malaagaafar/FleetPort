@@ -10,6 +10,7 @@ const purchaseRoutes = require('./routes/purchaseRoutes');
 const ngrok = require('@ngrok/ngrok'); // تحديث استيراد ngrok
 const path = require('path'); // تأكد من إضافة هذا السطر
 const assignmentRoutes = require('./routes/assignmentRoutes');
+const locationRoutes = require('./routes/locationRoutes');
 const app = express();
 
 app.use(cors());
@@ -24,6 +25,7 @@ app.use('/api/devices', require('./routes/deviceRoutes'));
 app.use('/api/purchase', require('./routes/purchaseRoutes'));
 app.use('/api/vehicles', require('./routes/vehicleRoutes'));
 app.use('/api/drivers', require('./routes/driverRoutes'));
+app.use('/api/locations', locationRoutes);
 // ... existing code ...
 app.use('/api/purchase', purchaseRoutes);
 // ... existing code ...
@@ -79,4 +81,4 @@ sequelize.authenticate()
         console.error('خطأ في الاتصال بقاعدة البيانات:', err);
     });
     
-module.exports = { app, sequelize };module.exports = { app, sequelize };
+module.exports = { app, sequelize };

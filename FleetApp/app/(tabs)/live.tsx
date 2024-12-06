@@ -3,6 +3,7 @@ import { useState } from 'react';
 import MapView, { Marker } from 'react-native-maps';
 import { Image } from 'react-native'; // تأكد من استيراد Image
 const { width, height } = Dimensions.get('window');
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function LiveScreen() {
   const [activeTab, setActiveTab] = useState('Vehicles');
@@ -12,7 +13,7 @@ export default function LiveScreen() {
     {
       id: 1,
       vehicle: 'Volvo 320C',
-      location: 'GTA, North York 364L168',
+      location: 'GTA, North York',
       driver: 'Youssef Mohamed',
       event: 'On Trip 304',
       status: 'Active',
@@ -134,7 +135,7 @@ export default function LiveScreen() {
                     </View>
                   </View>
                   <TouchableOpacity style={styles.arrowContainer}>
-                    <Text style={styles.arrowText}></Text>
+                  <MaterialIcons name="chevron-right" size={24} color="#999" />
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -169,7 +170,7 @@ export default function LiveScreen() {
                     </View>
                   </View>
                   <TouchableOpacity style={styles.arrowContainer}>
-                    <Text style={styles.arrowText}></Text>
+                    <MaterialIcons name="chevron-right" size={24} color="#999" />
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -260,8 +261,8 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   statusIcon: {
-    width: 30,
-    height: 30,
+    width: '75%',
+    height: '75%',
     //tintColor: '#fff',
   },
   statusText: {
