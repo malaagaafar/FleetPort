@@ -1,17 +1,24 @@
-We have the overall design for the app, now we need to implement the functionality.
-
-The main functionality we need to implement is the ability to schedule trips, services, and expenses.
-
-We also need to be able to view trip info, vehicle info, and driver info.
-
-The app will pull the data from Geotab API.
-
-We need to address the data architecture for the app, that maps the data from Geotab API to the app's data model.
-
-Geotab will give up the data about the vehicles, drivers, and trips.
-
-Our app will post vehicle, driver and trip info to Geotab API.
-
-We will use SQLite to store the data in the local database.
-
-We will use Expo SQLite to handle the SQLite database.
+[+] 1. Devices Shop
+[ ]    *Payments
+[ ]    *Subscriptions
+[+] 2. .Add Vehicles, Drivers
+[+]    *Trips
+[+]    Geofences.
+[+] 3. Assignments 
+[ ]    Configurations
+[ ]    Connections
+[+] 4. Positions
+[+]    Devices
+[+] 5. Vehicles Activity نشاط المركبات
+[+] 6. Drivers Activity نشاط السائقين
+[ ] 7. *Vehicle Profile معلومات المركبات
+[ ] 8. *Driver Profile معلومات السائقين
+[ ] 9. *Trips Profile معلومات الرحلات
+[+] 10. Locations on maps
+[+] 11. Speed
+[ ] 12. Events timeline
+[ ] 13. *Notifications التنبيهات
+[ ] 14. Rules القواعد
+[ ] 15. Routes View
+[ ] 16. Geofences Notifications
+[+] 17. Services

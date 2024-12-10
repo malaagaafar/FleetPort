@@ -7,8 +7,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { useCallback, useEffect, useState } from 'react'; // استيراد useState
 import api from '@/config/api';
 import { RefreshControl } from 'react-native'; // أضف هذا الاستيراد
-
-
+import fuelLogService from '../../services/fuelLogService';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -17,7 +16,12 @@ export default function HomeScreen() {
   const [vehicles, setVehicles] = useState([]); // الحالة لتخزين بيانات المركبات
   const [vehicleLocations, setVehicleLocations] = useState([]);
   const [addresses, setAddresses] = useState({});
-  //const [refreshing, setRefreshing] = useState(false);
+  const [fuelSummary, setFuelSummary] = useState({
+    total: 0,
+    confirmed: 0,
+    pending: 0
+  });
+  const [recentFuelLogs, setRecentFuelLogs] = useState([]);
 
   const fetchDrivers = async () => {
     try {
@@ -49,9 +53,21 @@ const fetchVehicles = async () => {
     try {
       const response = await api.get(`/locations/vehicle-locations?userId=${userId}`);
       setVehicleLocations(response.data);
-      console.log(response.data);
+      //console.log(response.data);
     } catch (error) {
       console.error('Error fetching vehicle locations:', error);
+    }
+  };
+
+  const fetchFuelData = async () => {
+    try {
+        const summaryResponse = await fuelLogService.getFuelLogsSummary(userId);
+        setFuelSummary(summaryResponse);
+        
+        const logsResponse = await fuelLogService.getRecentFuelLogs(userId);
+        setRecentFuelLogs(logsResponse);
+    } catch (error) {
+        console.error('Error fetching fuel data:', error);
     }
   };
 
@@ -71,6 +87,7 @@ const fetchVehicles = async () => {
     fetchDrivers();
     fetchVehicles();
     fetchVehicleLocations();
+    fetchFuelData();
 
     // تحديث المواقع كل دقيقة
     const locationInterval = setInterval(fetchVehicleLocations, 30000);
@@ -136,7 +153,7 @@ const getStatusStyle = (status: string) => {
     tripRequests: 1
   };
 
-  const vvehicles = [
+  /*const vvehicles = [
     {
       id: 1,
       status: 'active',
@@ -163,7 +180,7 @@ const getStatusStyle = (status: string) => {
     }
   ];
 
-  /*const drivers = [
+  const drivers = [
     { id: 1, name: 'Yasser G.', score: 4.8 },
     { id: 2, name: 'Yasser G.', score: 4.5 },
     { id: 3, name: 'Yasser G.', score: 4.7 },
@@ -353,6 +370,103 @@ const getStatusStyle = (status: string) => {
     </View>
   );
 
+  const renderFuelManagement = () => (
+    <View style={styles.fuelSection}>
+        <View style={styles.header}>
+            <Text style={styles.sectionTitle}>Fuel Management</Text>
+        </View>
+
+        {/* ملخص السجلات */}
+        <View style={styles.fuelSummaryContainer}>
+            <View style={styles.summaryItem}>
+                <Text style={styles.summaryNumber}>{fuelSummary.total}</Text>
+                <Text style={styles.summaryLabel}>Total Logs</Text>
+            </View>
+            <View style={styles.summaryItem}>
+                <Text style={[styles.summaryNumber, { color: '#4CD964' }]}>
+                    {fuelSummary.confirmed}
+                </Text>
+                <Text style={styles.summaryLabel}>Confirmed</Text>
+            </View>
+            <View style={styles.summaryItem}>
+                <Text style={[styles.summaryNumber, { color: '#FF9500' }]}>
+                    {fuelSummary.pending}
+                </Text>
+                <Text style={styles.summaryLabel}>Pending</Text>
+            </View>
+        </View>
+
+        {/* جدول السجلات الأخيرة */}
+        <View style={styles.logsContainer}>
+            {recentFuelLogs.map(log => (
+                <View key={log.id} style={styles.logItem}>
+                    <View style={styles.logInfo}>
+                        <Text style={styles.vehicleName}>{log.vehicle_name}</Text>
+                        <Text style={styles.logDetails}>
+                            {`${log.liters_added}L • ${formatDateTime(log.filling_time)}`}
+                        </Text>
+                    </View>
+                    <View style={styles.logActions}>   
+                    {log.status == 'confirmed' && (
+                          <TouchableOpacity 
+                              style={[styles.actionButton, styles.editButton]}
+                              onPress={() => router.push(`/fuel-logs/${log.id}/edit`)}
+                          >
+                              <Text style={styles.buttonText}>edit</Text>
+                          </TouchableOpacity>
+                      )}
+
+                      {log.status == 'pending' && (
+                          <TouchableOpacity 
+                              style={[styles.actionButton, styles.confirmButton]}
+                              onPress={() => router.push(`/fuel-logs/${log.id}/confirm`)}
+                          >
+                              <Text style={styles.buttonText}>confirm</Text>
+                          </TouchableOpacity>
+                      )}                     
+                    {/*{log.status == 'confirmed' && (
+                      <TouchableOpacity 
+                          style={styles.actionButton}
+                          onPress={() => router.push(`/fuel-logs/${log.id}/edit`)}
+                      >
+                          <MaterialIcons 
+                              name="edit" // تغيير الأيقونة إلى قلم التعديل
+                              size={20} 
+                              color="#007AFF"
+                          />
+                      </TouchableOpacity>
+                      )}
+                      {log.status == 'pending' && (
+                            <TouchableOpacity 
+                                style={styles.actionButton}
+                                onPress={() => router.push(`/fuel-logs/${log.id}/confirm`)}
+    >
+                        <MaterialIcons 
+                          name="check-circle" // تغيير الأيقونة إلى علامة الانتظار
+                          size={20} 
+                          color="#FF9500" // تغيير اللون إلى البرتقالي للدلالة على الانتظار
+                      />
+                            </TouchableOpacity>
+                        )}
+                        {log.price_per_liter && log.status == 'pending' && (
+                            <TouchableOpacity 
+                                style={styles.actionButton}
+                                onPress={() => router.push(`/fuel-logs/${log.id}/confirm`)}
+                            >
+                                <MaterialIcons 
+                                    name="check-circle" 
+                                    size={20} 
+                                    color="#4CD964"
+                                />
+                            </TouchableOpacity>
+                        )}*/}
+                    </View>
+                </View>
+            ))}
+        </View>
+    </View>
+  );
+
   return (
       <ScrollView style={styles.container}>
       {/* Fleet Summary */}
@@ -393,8 +507,8 @@ const getStatusStyle = (status: string) => {
           <MapView
             style={styles.map}
             initialRegion={{
-              latitude: 43.7,
-              longitude: -79.42,
+              latitude: 43.7182,
+              longitude: -79.5181,
               latitudeDelta: 0.0922,
               longitudeDelta: 0.0421,
             }}
@@ -450,6 +564,9 @@ const getStatusStyle = (status: string) => {
                         ? `Inactive for ${Math.round(vehicle.hoursSinceStatus * 60)}m` // أقل من ساعة
                         : `Inactive for ${Math.round(vehicle.hoursSinceStatus)}h`)}
                 </Text>
+                <Text style={styles.vsvehicleDetails}>
+                From: {vehicle.currentDriver.statusTime}
+                </Text>
               </View>
               <View style={styles.detailsContainer}>
                 <View style={styles.detailRow}>
@@ -476,20 +593,17 @@ const getStatusStyle = (status: string) => {
                       <Text style={styles.vvehicleDetails}>
                         {'\n'}Login: {vehicle.currentDriver.loginTime}
                         {'\n'}Since ({vehicle.currentDriver.hoursActive} hours)
-                        {'\n'}Vehicle started at: {vehicle.currentDriver.statusTime}
                       </Text>
                     )}
                     {vehicle.currentDriver.name == 'Unknown' && vehicle.currentDriver.statusTime && (
                       <Text style={styles.vvehicleDetails}>
-                        {'\n'}Vehicle started at: {vehicle.currentDriver.statusTime}
-                        {'\n'}Since ({vehicle.currentDriver.hoursActive} hours)
                       </Text>
                     )}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.label}>Event:</Text>
-                  <Text style={styles.value}>{vehicle.event}</Text>
+                  <Text style={styles.value}>{vehicle.currentTrip?.title || 'Unknown'}</Text>
                 </View>
               </View>
               <TouchableOpacity style={styles.arrowContainer}>
@@ -547,8 +661,8 @@ const getStatusStyle = (status: string) => {
             </TouchableOpacity>
         </ScrollView>
       </View>
-
-      {renderMaintenanceReport()}
+      {renderFuelManagement()}
+      {/* {renderMaintenanceReport()} */}
       {renderFinancialReport()}
     </ScrollView>
   );
@@ -627,6 +741,12 @@ const styles = StyleSheet.create({
       fontSize: 9,
       color: '#666',
       textAlign: 'left',
+    },
+    vsvehicleDetails: {
+      fontSize: 9,
+      color: '#666',
+      textAlign: 'center',
+      marginTop: 2,
     },
     deviceInfo: {
       marginTop: 4,
@@ -1089,4 +1209,78 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4
   },
+  fuelSection: {
+    padding: 15,
+    backgroundColor: '#fff',
+    marginBottom: 10,
+  },
+  fuelSummaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F1F1',
+  },
+  summaryItem: {
+    alignItems: 'center',
+  },
+  summaryNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  summaryLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  logsContainer: {
+    marginTop: 10,
+  },
+  logItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F1F1',
+  },
+  logInfo: {
+    flex: 1,
+  },
+  vehicleName: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  logDetails: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  logActions: {
+    flexDirection: 'row',
+  },
+  actionButton: {
+    padding: 8,
+    marginLeft: 10,
+  },
+  actionIcon: {
+    width: 20,
+    height: 20,
+  },
+    actionButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 6,
+    },
+    editButton: {
+        backgroundColor: '#007AFF20',
+    },
+    confirmButton: {
+        backgroundColor: '#34C75920',
+    },
+    buttonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#007AFF',
+    }
 });

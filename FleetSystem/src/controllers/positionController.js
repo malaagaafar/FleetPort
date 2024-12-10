@@ -41,6 +41,21 @@ class PositionController {
             res.status(500).json({ error: 'Error fetching positions' });
         }
     }
+
+    async getFuelHistory(req, res) {
+        try {
+            const { deviceId, startTime, endTime } = req.query;
+            const fuelHistory = await positionService.getFuelHistory(
+                parseInt(deviceId),
+                new Date(startTime),
+                new Date(endTime)
+            );
+            res.json(fuelHistory);
+        } catch (error) {
+            console.error('Controller error:', error);
+            res.status(500).json({ error: 'Error fetching fuel history' });
+        }
+    }
 }
 
 module.exports = new PositionController(); 

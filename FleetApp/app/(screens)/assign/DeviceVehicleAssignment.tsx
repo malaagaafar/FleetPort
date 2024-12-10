@@ -15,6 +15,7 @@ import { useSelector } from 'react-redux';
 import { router } from 'expo-router';
 import { RootState } from '@/store/store';
 import api from '../../../config/api';
+import { KeyboardWrapper } from '../../../components/KeyboardWrapper';
 
 export default function DeviceVehicleAssignment() {
     const userId = useSelector((state: RootState) => state.auth.user?.id);
@@ -107,8 +108,9 @@ export default function DeviceVehicleAssignment() {
     );
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            {renderHeader()}
+        <KeyboardWrapper>
+            <SafeAreaView style={styles.safeArea}>
+                {renderHeader()}
             <View style={styles.container}>
                 <View style={styles.form}>
                     <Text style={styles.label}>Device</Text>
@@ -175,6 +177,7 @@ export default function DeviceVehicleAssignment() {
                 </View>
             </View>
         </SafeAreaView>
+        </KeyboardWrapper>
     );
 }
 

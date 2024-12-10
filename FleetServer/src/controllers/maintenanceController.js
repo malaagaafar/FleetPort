@@ -1,155 +1,202 @@
-const MaintenanceService = require('../services/maintenanceService');
-const Vehicle = require('../models/Vehicle');
-const logger = require('../utils/logger');
+const { sequelize } = require('../config/database');
+const { QueryTypes } = require('sequelize');
 
-class MaintenanceController {
-  async scheduleMaintenanceCheck(req, res, next) {
-    try {
-      const { vehicleId, maintenanceType, scheduledDate } = req.body;
-      
-      // التحقق من ملكية المركبة
-      const vehicle = await Vehicle.findOne({
-        _id: vehicleId,
-        company: req.user.company
-      });
-      
-      if (!vehicle) {
-        return res.status(404).json({ message: 'المركبة غير موجودة' });
-      }
-
-      const maintenanceRecord = await MaintenanceService.scheduleMaintenanceCheck(
-        vehicleId,
-        maintenanceType,
-        new Date(scheduledDate)
-      );
-
-      res.status(201).json(maintenanceRecord);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async updateMaintenanceStatus(req, res, next) {
-    try {
-      const { recordId } = req.params;
-      const { status, details } = req.body;
-
-      const record = await MaintenanceService.updateMaintenanceStatus(
-        recordId,
-        status,
-        details
-      );
-
-      res.json(record);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async getMaintenanceHistory(req, res, next) {
-    try {
-      const { vehicleId } = req.params;
-      const filters = {
-        status: req.query.status,
-        dateRange: req.query.dateRange ? {
-          start: new Date(req.query.dateRange.start),
-          end: new Date(req.query.dateRange.end)
-        } : null
-      };
-
-      // التحقق من ملكية المركبة
-      const vehicle = await Vehicle.findOne({
-        _id: vehicleId,
-        company: req.user.company
-      });
-      
-      if (!vehicle) {
-        return res.status(404).json({ message: 'المركبة غير موجودة' });
-      }
-
-      const records = await MaintenanceService.getMaintenanceHistory(
-        vehicleId,
-        filters
-      );
-
-      res.json(records);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async getUpcomingMaintenance(req, res, next) {
-    try {
-      const vehicles = await Vehicle.find({
-        company: req.user.company,
-        nextMaintenanceDate: {
-          $gte: new Date(),
-          $lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 يوم
-        }
-      }).select('plateNumber make model nextMaintenanceDate');
-
-      res.json(vehicles);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async addMaintenanceAttachment(req, res, next) {
-    try {
-      const { recordId } = req.params;
-      const file = req.file;
-
-      if (!file) {
-        return res.status(400).json({ message: 'لم يتم تحميل أي ملف' });
-      }
-
-      const record = await MaintenanceService.addAttachment(recordId, {
-        type: file.mimetype,
-        url: file.path,
-        name: file.originalname,
-        uploadedAt: new Date()
-      });
-
-      res.json(record);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async getMaintenanceStats(req, res, next) {
-    try {
-      const stats = await MaintenanceService.getMaintenanceStats(req.user.company);
-      res.json(stats);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async generateMaintenanceReport(req, res, next) {
-    try {
-      const { startDate, endDate, format } = req.query;
-      
-      const report = await MaintenanceService.generateReport(
-        req.user.company,
-        {
-          startDate: new Date(startDate),
-          endDate: new Date(endDate)
+// إنشاء صيانة جديدة
+const createMaintenance = async (req, res) => {
+  const {
+    vehicle_id,
+    recommendation_id,
+    type,
+    scheduled_date,
+    scheduled_end,
+    estimated_duration,
+    assigned_to,
+    cost_estimate,
+    notes,
+    provider_id,
+    custom_provider_name,
+    custome_type,
+    location
+  } = req.body;
+  console.log(req.body);
+  try {
+    const result = await sequelize.query(
+      `INSERT INTO maintenance_schedules 
+      (vehicle_id, recommendation_id, type, scheduled_date, scheduled_end, 
+       estimated_duration, assigned_to, cost_estimate, notes, provider_id, 
+       custom_provider_name, custome_type, location, created_at, updated_at) 
+      VALUES 
+      (:vehicle_id, :recommendation_id, :type, :scheduled_date, :scheduled_end,
+       :estimated_duration, :assigned_to, :cost_estimate, :notes, :provider_id,
+       :custom_provider_name, :custome_type, 
+       ST_SetSRID(ST_GeomFromGeoJSON(:location), 4326),
+       CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING id`,
+      {
+        replacements: {
+          vehicle_id,
+          recommendation_id,
+          type,
+          scheduled_date,
+          scheduled_end,
+          estimated_duration,
+          assigned_to,
+          cost_estimate,
+          notes,
+          provider_id,
+          custom_provider_name,
+          custome_type,
+          location: JSON.stringify(location)
         },
-        format || 'pdf'
-      );
-
-      if (format === 'json') {
-        return res.json(report);
+        type: QueryTypes.INSERT
       }
+    );
 
-      // إرسال الملف للتحميل
-      res.setHeader('Content-Type', format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename=maintenance-report.${format}`);
-      res.send(report);
-    } catch (error) {
-      next(error);
-    }
+    res.status(201).json({
+      success: true,
+      message: 'Maintenance scheduled successfully',
+      data: {
+        id: result[0][0].id
+      }
+    });
+  } catch (error) {
+    console.error('Error scheduling maintenance:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to schedule maintenance',
+      error: error.message
+    });
   }
-}
+};
 
-module.exports = new MaintenanceController();
+// الحصول على قائمة الصيانة
+const getAllMaintenance = async (req, res) => {
+  try {
+    const maintenances = await sequelize.query(
+      `SELECT 
+        ms.*,
+        v.name as vehicle_name,
+        v.plate_number,
+        ST_X(ms.location::geometry) as longitude,
+        ST_Y(ms.location::geometry) as latitude
+      FROM maintenance_schedules ms
+      LEFT JOIN vehicles v ON v.id = ms.vehicle_id
+      ORDER BY ms.scheduled_date DESC`,
+      {
+        type: QueryTypes.SELECT
+      }
+    );
+
+    // تصنيف الخدمات حسب المواعيد
+    const now = new Date();
+    const categorizedMaintenance = maintenances.reduce((acc, maintenance) => {
+      const startDate = new Date(maintenance.scheduled_date);
+      const endDate = new Date(maintenance.scheduled_end);
+
+      if (startDate > now) {
+        // لم يحن موعدها بعد
+        acc.upcoming.push(maintenance);
+      } else if (startDate <= now && endDate > now) {
+        // في الوقت الحالي
+        acc.active.push(maintenance);
+      } else if (endDate <= now) {
+        // انتهى موعدها
+        acc.history.push(maintenance);
+      }
+      return acc;
+    }, { upcoming: [], active: [], history: [] });
+
+    res.json({
+      success: true,
+      data: categorizedMaintenance
+    });
+  } catch (error) {
+    console.error('Error fetching maintenance schedules:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch maintenance schedules',
+      error: error.message
+    });
+  }
+};
+
+// الحصول على تفاصيل صيانة محددة
+const getMaintenanceById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const maintenance = await sequelize.query(
+      `SELECT 
+        ms.*,
+        v.name as vehicle_name,
+        v.plate_number,
+        ST_X(ms.location::geometry) as longitude,
+        ST_Y(ms.location::geometry) as latitude,
+        u.name as assigned_to_name
+      FROM maintenance_schedules ms
+      LEFT JOIN vehicles v ON v.id = ms.vehicle_id
+      LEFT JOIN users u ON u.id = ms.assigned_to
+      WHERE ms.id = :id`,
+      {
+        replacements: { id },
+        type: QueryTypes.SELECT
+      }
+    );
+
+    if (!maintenance[0]) {
+      return res.status(404).json({
+        success: false,
+        message: 'Maintenance schedule not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: maintenance[0]
+    });
+  } catch (error) {
+    console.error('Error fetching maintenance details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch maintenance details',
+      error: error.message
+    });
+  }
+};
+
+// تحديث حالة الصيانة
+const updateMaintenanceStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  try {
+    await sequelize.query(
+      `UPDATE maintenance_schedules 
+      SET status = :status::maintenance_status, updated_at = CURRENT_TIMESTAMP
+      WHERE id = :id`,
+      {
+        replacements: { id, status },
+        type: QueryTypes.UPDATE
+      }
+    );
+
+    res.json({
+      success: true,
+      message: 'Maintenance status updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating maintenance status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update maintenance status',
+      error: error.message
+    });
+  }
+};
+
+module.exports = {
+  createMaintenance,
+  getAllMaintenance,
+  getMaintenanceById,
+  updateMaintenanceStatus
+};

@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../../config/api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import { KeyboardWrapper } from '../../../components/KeyboardWrapper';
 
 export default function AssignDeviceScreen() {
   const { deviceSerial, deviceType } = useLocalSearchParams();
@@ -120,8 +121,9 @@ export default function AssignDeviceScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {renderHeader()}
+    <KeyboardWrapper>
+      <SafeAreaView style={styles.safeArea}>
+        {renderHeader()}
       <View style={styles.container}>
         <Text style={styles.subtitle}>
           الجهاز: {deviceSerial}
@@ -135,8 +137,9 @@ export default function AssignDeviceScreen() {
           contentContainerStyle={styles.list}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
-      </View>
-    </SafeAreaView>
+        </View>
+      </SafeAreaView>
+    </KeyboardWrapper>
   );
 }
 

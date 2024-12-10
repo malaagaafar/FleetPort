@@ -1,9 +1,10 @@
 import { View, StyleSheet, TouchableOpacity, Image, Text } from 'react-native';
 import { Stack, router } from 'expo-router';
+import { KeyboardWrapper } from '../../components/KeyboardWrapper'; 
 
 export default function AddPartner() {
   return (
-    <>
+    <KeyboardWrapper>
       <Stack.Screen 
         options={{    
           headerShown: true,
@@ -29,7 +30,7 @@ export default function AddPartner() {
       <View style={styles.container}>
         <Text>Add Partner Screen Content</Text>
       </View>
-    </>
+    </KeyboardWrapper>
   );
 }
 

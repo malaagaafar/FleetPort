@@ -1,17 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const tripController = require('../controllers/tripController');
-const auth = require('../middleware/auth');
-const validation = require('../middleware/validation');
+//const auth = require('../middleware/auth');
 
-router.use(auth);
+// تطبيق middleware المصادقة على جميع الطرق
+//router.use(auth);
 
+// طرق الرحلات
 router.get('/', tripController.getAllTrips);
-router.get('/:id', tripController.getTrip);
-router.post('/', validation.createTrip, tripController.createTrip);
-router.put('/:id/status', validation.updateTripStatus, tripController.updateTripStatus);
-router.get('/:id/analytics', tripController.getTripAnalytics);
-router.get('/vehicle/:vehicleId', tripController.getVehicleTrips);
-router.get('/driver/:driverId', tripController.getDriverTrips);
+router.post('/', tripController.createTrip);
+
+// طرق جلب المركبات والسائقين للتعيين
+router.get('/vehicles/for-assignment', tripController.getVehiclesForAssignment);
+router.get('/drivers/for-assignment', tripController.getDriversForAssignment);
 
 module.exports = router;

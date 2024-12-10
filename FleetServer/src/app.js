@@ -11,6 +11,12 @@ const ngrok = require('@ngrok/ngrok'); // تحديث استيراد ngrok
 const path = require('path'); // تأكد من إضافة هذا السطر
 const assignmentRoutes = require('./routes/assignmentRoutes');
 const locationRoutes = require('./routes/locationRoutes');
+const deviceAssignmentRoutes = require('./routes/deviceAssignmentRoutes');
+const positionRoutes = require('./routes/positionRoutes');
+const maintenanceRoutes = require('./routes/maintenanceRoutes');
+const geofenceRoutes = require('./routes/geofenceRoutes');
+const fuelLogsRoutes = require('./routes/fuelLogsRoutes');
+
 const app = express();
 
 app.use(cors());
@@ -19,6 +25,8 @@ app.use(express.json());
 // المسارات
 app.use('/api/auth', authRoutes);
 app.use('/api/assignments', assignmentRoutes);
+app.use('/api/positions', positionRoutes);
+app.use('/api/device-assignments', deviceAssignmentRoutes);
 //app.use('/api/catalog', deviceCatalogRoutes);
 //app.use('/webhook', webhookRoutes);
 app.use('/api/devices', require('./routes/deviceRoutes'));
@@ -26,8 +34,11 @@ app.use('/api/purchase', require('./routes/purchaseRoutes'));
 app.use('/api/vehicles', require('./routes/vehicleRoutes'));
 app.use('/api/drivers', require('./routes/driverRoutes'));
 app.use('/api/locations', locationRoutes);
-// ... existing code ...
+app.use('/api/trips', require('./routes/tripRoutes'));
+app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/purchase', purchaseRoutes);
+app.use('/api/geofences', geofenceRoutes);
+app.use('/api/fuel-logs', fuelLogsRoutes);
 // ... existing code ...
 //app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 

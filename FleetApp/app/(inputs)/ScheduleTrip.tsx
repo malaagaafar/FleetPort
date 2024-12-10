@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform, Alert, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform, Alert, ActivityIndicator, Modal, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DropDownPicker from 'react-native-dropdown-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -49,7 +49,6 @@ const LocationSearch = ({
   };
 
   return (
-    <KeyboardWrapper>
       <View style={styles.searchContainer}>
         <View style={styles.searchRow}>
         <TextInput
@@ -96,7 +95,6 @@ const LocationSearch = ({
         </View>
       )}
       </View>
-    </KeyboardWrapper>
   );
 };
 
@@ -119,7 +117,7 @@ export default function ScheduleTrip() {
   const [tripData, setTripData] = useState({
     reference_number: '',
     type: 'delivery',
-    status: 'draft',
+    status: 'scheduled',
     title: '',
     description: '',
     vehicle_id: null,
@@ -146,15 +144,40 @@ export default function ScheduleTrip() {
   const [startLocation, setStartLocation] = useState<any>(null);
   const [endLocation, setEndLocation] = useState<any>(null);
 
-  // تحويل البيانات إلى تنسيق DropDownPicker
+  // إضافة state منفصل للقيم المحددة
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [selectedDriver, setSelectedDriver] = useState(null);
+
+  // تحديث tripData عند تغيير القيم المحددة
+  useEffect(() => {
+    setTripData(prev => ({
+        ...prev,
+        vehicle_id: selectedVehicle,
+        driver_id: selectedDriver
+    }));
+  }, [selectedVehicle, selectedDriver]);
+
+  // تحويل البيانات إلى تنسيق DropDownPicker مع إضافة الصور
   const vehicleItems = vehicles.map(v => ({
-    label: `${v.make} ${v.model} (${v.plate_number})`,
-    value: v.id
+    label: `${v.name} - ${v.plate_number}`,
+    value: v.id,
+    icon: () => (
+      <Image 
+        source={{ uri: v.vehicle_image || '' }}
+        style={styles.dropdownItemImage}
+      />
+    )
   }));
 
   const driverItems = drivers.map(d => ({
     label: `${d.first_name} ${d.last_name}`,
-    value: d.id
+    value: d.id,
+    icon: () => (
+      <Image 
+        source={{ uri: d.profile_image || '' }}
+        style={styles.dropdownItemImage}
+      />
+    )
   }));
 
   const priorityItems = [
@@ -165,6 +188,8 @@ export default function ScheduleTrip() {
 
   const handleSubmit = async () => {
     // التحقق من الحقول المطلوبة
+    console.log('Sending trip data:', tripData); // للتأكد من البيانات قبل الإرسال
+
     if (!tripData.title) {
       Alert.alert('Error', 'Please enter trip title');
       return;
@@ -217,6 +242,42 @@ export default function ScheduleTrip() {
       );
     }
   };
+
+  // إضافة دالة fetchVehicles
+  const fetchVehicles = async () => {
+    try {
+      const response = await api.get(`/vehicles/for-assignment?userId=${userId}`);
+      setVehicles(response.data.vehicles);
+    } catch (error) {
+      console.error('Error fetching vehicles:', error);
+      Alert.alert('Error', 'Failed to load vehicles');
+    }
+  };
+
+  // إضافة دالة fetchDrivers
+  const fetchDrivers = async () => {
+    try {
+      const response = await api.get(`/drivers/for-assignment?userId=${userId}`);
+      setDrivers(response.data.drivers);
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+      Alert.alert('Error', 'Failed to load drivers');
+    }
+  };
+
+  // تعديل useEffect لاستدعاء الدوال الجديدة
+  useEffect(() => {
+    const loadData = async () => {
+      await Promise.all([
+        fetchVehicles(),
+        fetchDrivers()
+      ]);
+    };
+
+    if (userId) {
+      loadData();
+    }
+  }, [userId]);
 
   // إضافة دوال معالجة التواريخ
   const onStartDateChange = (event: any, selectedDate?: Date) => {
@@ -380,13 +441,28 @@ export default function ScheduleTrip() {
             <DropDownPicker
               open={vehicleOpen}
               setOpen={setVehicleOpen}
-              items={vehicleItems}
-              value={tripData.vehicle_id}
-              setValue={(value) => setTripData({...tripData, vehicle_id: value})}
+              items={vehicles.map(v => ({
+                label: `${v.name} - ${v.plate_number}`,
+                value: v.id,
+                icon: () => (
+                  <Image 
+                    source={{ uri: v.vehicle_image || '' }}
+                    style={styles.dropdownItemImage}
+                  />
+                )
+              }))}
+              value={selectedVehicle}
+              setValue={setSelectedVehicle}
               style={styles.dropdown}
               dropDownContainerStyle={styles.dropdownContainer}
               placeholder="Select vehicle"
               listMode="SCROLLVIEW"
+              ListItemComponent={({ item }) => (
+                <View style={styles.dropdownItem}>
+                  {item.icon && item.icon()}
+                  <Text style={styles.dropdownItemText}>{item.label}</Text>
+                </View>
+              )}
             />
           </View>
 
@@ -396,13 +472,28 @@ export default function ScheduleTrip() {
             <DropDownPicker
               open={driverOpen}
               setOpen={setDriverOpen}
-              items={driverItems}
-              value={tripData.driver_id}
-              setValue={(value) => setTripData({...tripData, driver_id: value})}
+              items={drivers.map(d => ({
+                label: `${d.first_name} ${d.last_name}`,
+                value: d.id,
+                icon: () => (
+                  <Image 
+                    source={{ uri: d.profile_image || '' }}
+                    style={styles.dropdownItemImage}
+                  />
+                )
+              }))}
+              value={selectedDriver}
+              setValue={setSelectedDriver}
               style={styles.dropdown}
               dropDownContainerStyle={styles.dropdownContainer}
               placeholder="Select driver"
               listMode="SCROLLVIEW"
+              ListItemComponent={({ item }) => (
+                <View style={styles.dropdownItem}>
+                  {item.icon && item.icon()}
+                  <Text style={styles.dropdownItemText}>{item.label}</Text>
+                </View>
+              )}
             />
           </View>
 
@@ -430,7 +521,7 @@ export default function ScheduleTrip() {
               )}
             </View>
             
-            <View style={[styles.inputGroup, styles.halfWidth]}>
+            <View style={styles.inputGroup}>
               <Text style={styles.label}>End Date *</Text>
               <TouchableOpacity 
                 style={styles.dateButton}
@@ -784,5 +875,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  dropdownItemImage: {
+    width: 30,
+    height: 30,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  dropdownItemText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#000',
   },
 });

@@ -1,6 +1,7 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Link } from 'expo-router';
 import { useState } from 'react';
+import { KeyboardWrapper } from '../../components/KeyboardWrapper';
 
 export default function SignUpScreen() {
   const [formData, setFormData] = useState({
@@ -57,6 +58,7 @@ export default function SignUpScreen() {
 };
 
   return (
+    <KeyboardWrapper>
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.logo}>cPORT</Text>
@@ -131,6 +133,7 @@ export default function SignUpScreen() {
         </View>
       </View>
     </View>
+    </KeyboardWrapper>
   );
 }
 

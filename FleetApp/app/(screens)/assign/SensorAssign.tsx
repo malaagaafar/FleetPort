@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../../config/api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import { KeyboardWrapper } from '../../../components/KeyboardWrapper';
 
 export default function AssignSensorScreen() {
   const { sensorSerial, sensorType } = useLocalSearchParams();
@@ -122,8 +123,9 @@ export default function AssignSensorScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {renderHeader()}
+    <KeyboardWrapper>
+      <SafeAreaView style={styles.safeArea}>
+        {renderHeader()}
       <View style={styles.container}>
         <Text style={styles.subtitle}>
           المستشعر: {sensorSerial}
@@ -138,7 +140,8 @@ export default function AssignSensorScreen() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </KeyboardWrapper>
   );
 }
 

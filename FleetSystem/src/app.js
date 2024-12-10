@@ -22,7 +22,7 @@ app.use('/api/test', testRoutes);
 app.use('/api/positions', positionRoutes);
 
 // بدء اتصال WebSocket
-websocketService.connect();
+//websocketService.connect();
 
 // بدء المحاكاة في بيئة التطوير
 if (process.env.NODE_ENV === 'development') {

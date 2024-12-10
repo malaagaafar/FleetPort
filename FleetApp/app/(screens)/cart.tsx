@@ -6,7 +6,7 @@ import { RootState } from '../../store/store';
 import { Ionicons } from '@expo/vector-icons';
 import { incrementQuantity, decrementQuantity } from '../../store/slices/cartSlice';
 import { useNavigation } from '@react-navigation/native';
-import { handleCheckout } from '../services/checkoutService'; // استيراد الدالة
+import { handleCheckout } from '../../services/checkoutService'; // استيراد الدالة
 
 
 export default function CartScreen() {

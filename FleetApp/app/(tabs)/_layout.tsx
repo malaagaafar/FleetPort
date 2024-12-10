@@ -48,7 +48,7 @@ function LiveHeader() {
       marginRight: 15,
       alignItems: 'center',
     }}>
-      <TouchableOpacity onPress={() => router.push('../(inputs)/ScheduleTrip')}>
+      {/*<TouchableOpacity onPress={() => router.push('../(inputs)/ScheduleTrip')}>
         <Image 
           source={require('../../assets/icons/plus.png')}
           style={{
@@ -56,7 +56,7 @@ function LiveHeader() {
             height: 24,
           }}
         />
-      </TouchableOpacity>
+      </TouchableOpacity>*/}
       <TouchableOpacity>
         <Image 
           source={require('../../assets/icons/loupe.png')}

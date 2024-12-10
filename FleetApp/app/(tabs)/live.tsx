@@ -4,6 +4,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { Image } from 'react-native'; // تأكد من استيراد Image
 const { width, height } = Dimensions.get('window');
 import { MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 export default function LiveScreen() {
   const [activeTab, setActiveTab] = useState('Vehicles');
@@ -82,6 +83,15 @@ export default function LiveScreen() {
 
       {/* شريط التبويب والمحتوى */}
       <View style={styles.bottomSheet}>
+        {/* زر إضافة Geofence */}
+        <TouchableOpacity 
+          style={styles.geofenceButton}
+          onPress={() => router.push('../(inputs)/AddGeofence')}
+        >
+          <MaterialIcons name="add-circle" size={24} color="#fff" />
+          <Text style={styles.geofenceButtonText}>Add Geofence</Text>
+        </TouchableOpacity>
+
         <View style={styles.tabsContainer}>
           {['Vehicles', 'Trips'].map((tab) => (
             <TouchableOpacity
@@ -200,6 +210,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     marginTop: -20,
+    position: 'relative',
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -295,5 +306,26 @@ const styles = StyleSheet.create({
   arrowText: {
     color: '#666',
     fontSize: 18,
+  },
+  geofenceButton: {
+    position: 'absolute',
+    top: -50,
+    right: 20,
+    backgroundColor: '#000',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 25,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 1000,
+  },
+  geofenceButtonText: {
+    color: '#fff',
+    marginLeft: 8,
+    fontWeight: '500',
   },
 });

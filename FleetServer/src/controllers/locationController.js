@@ -33,12 +33,26 @@ class LocationController {
                     CASE 
                         WHEN d.id IS NOT NULL THEN EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - d.updated_at))/3600
                         ELSE NULL 
-                    END as hours_since_login
+                    END as hours_since_login,
+                    t.id as trip_id,
+                    t.title as trip_title,
+                    t.status as trip_status,
+                    t.scheduled_start,
+                    t.scheduled_end,
+                    t.start_location,
+                    t.end_location
                 FROM 
                     vehicles v
                     INNER JOIN device_vehicle_assignments dva ON v.id = dva.vehicle_id
                     INNER JOIN traccar_device_configs tdc ON dva.device_serial_number = tdc.device_serial_number
                     LEFT JOIN drivers d ON v.id = d.current_vehicle_id
+                    LEFT JOIN trips t ON v.id = t.vehicle_id
+                        AND (
+                            t.status IN ('scheduled', 'in_progress')
+                            OR (
+                                CURRENT_TIMESTAMP BETWEEN t.scheduled_start AND t.scheduled_end
+                            )
+                        )
                 WHERE 
                     v.user_id = :userId
             `, {
@@ -135,7 +149,16 @@ class LocationController {
                 attributes: {
                     ...position?.attributes,
                     deviceSerial: vehicle.device_serial_number
-                }
+                },
+                currentTrip: vehicle.trip_id ? {
+                    id: vehicle.trip_id,
+                    title: vehicle.trip_title,
+                    status: vehicle.trip_status,
+                    scheduled_start: vehicle.scheduled_start,
+                    scheduled_end: vehicle.scheduled_end,
+                    start_location: vehicle.start_location,
+                    end_location: vehicle.end_location
+                } : null
             };
         });
 

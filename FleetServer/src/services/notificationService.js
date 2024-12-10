@@ -1,126 +1,194 @@
-const Alert = require('../models/Alert');
-const User = require('../models/User');
-const Company = require('../models/Company');
-const admin = require('firebase-admin');
-const nodemailer = require('nodemailer');
+const { sequelize } = require('../config/database');
 
 class NotificationService {
-  constructor() {
-    this.emailTransporter = nodemailer.createTransport({
-      // إعدادات SMTP
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
-  }
+    static async createNotification({
+        userId,
+        partnerId = null,
+        type,
+        title,
+        message,
+        data = {}
+    }) {
+        try {
+            const query = `
+                INSERT INTO notifications (
+                    user_id,
+                    partner_id,
+                    type,
+                    title,
+                    message,
+                    data,
+                    created_at
+                ) VALUES (
+                    :userId,
+                    :partnerId,
+                    :type,
+                    :title,
+                    :message,
+                    :data::jsonb,
+                    CURRENT_TIMESTAMP
+                ) RETURNING id
+            `;
 
-  async sendAlert(alertData) {
-    try {
-      // إنشاء تنبيه جديد
-      const alert = new Alert({
-        ...alertData,
-        status: 'new'
-      });
-      await alert.save();
+            const [result] = await sequelize.query(query, {
+                replacements: {
+                    userId,
+                    partnerId,
+                    type,
+                    title,
+                    message,
+                    data: JSON.stringify(data)
+                },
+                type: sequelize.QueryTypes.INSERT
+            });
 
-      // الحصول على مستخدمي الشركة
-      const company = await Company.findById(alertData.company);
-      const users = await User.find({
-        company: alertData.company,
-        role: { $in: ['admin', 'manager'] }
-      });
-
-      // إرسال الإشعارات حسب تفضيلات الشركة
-      const notifications = [];
-      
-      if (company.settings.notificationPreferences.email) {
-        notifications.push(this.sendEmailNotification(users, alert));
-      }
-      
-      if (company.settings.notificationPreferences.push) {
-        notifications.push(this.sendPushNotification(users, alert));
-      }
-
-      await Promise.all(notifications);
-      return alert;
-    } catch (error) {
-      console.error('Error sending alert:', error);
-      throw error;
+            return result[0].id;
+        } catch (error) {
+            console.error('Error creating notification:', error);
+            throw error;
+        }
     }
-  }
 
-  async sendEmailNotification(users, alert) {
-    const emails = users.map(user => user.email);
-    
-    const mailOptions = {
-      from: process.env.SMTP_FROM,
-      to: emails.join(','),
-      subject: `Alert: ${alert.type} - ${alert.severity}`,
-      html: `
-        <h2>New Alert</h2>
-        <p><strong>Type:</strong> ${alert.type}</p>
-        <p><strong>Severity:</strong> ${alert.severity}</p>
-        <p><strong>Message:</strong> ${alert.message}</p>
-        <p><strong>Time:</strong> ${alert.createdAt}</p>
-      `
-    };
+    static async sendTripNotification(tripId, action, userId) {
+        try {
+            // جلب معلومات الرحلة
+            const [trip] = await sequelize.query(
+                `SELECT 
+                    t.*,
+                    v.name as vehicle_name,
+                    d.first_name || ' ' || d.last_name as driver_name
+                FROM trips t
+                LEFT JOIN vehicles v ON t.vehicle_id = v.id
+                LEFT JOIN drivers d ON t.driver_id = d.id
+                WHERE t.id = :tripId`,
+                {
+                    replacements: { tripId },
+                    type: sequelize.QueryTypes.SELECT
+                }
+            );
 
-    return this.emailTransporter.sendMail(mailOptions);
-  }
+            if (!trip) {
+                throw new Error('Trip not found');
+            }
 
-  async sendPushNotification(users, alert) {
-    const tokens = users
-      .filter(user => user.fcmToken)
-      .map(user => user.fcmToken);
+            let title, message;
+            switch (action) {
+                case 'created':
+                    title = 'رحلة جديدة';
+                    message = `تم إنشاء رحلة جديدة "${trip.title}" مع السائق ${trip.driver_name}`;
+                    break;
+                case 'started':
+                    title = 'بدء الرحلة';
+                    message = `بدأت الرحلة "${trip.title}" مع المركبة ${trip.vehicle_name}`;
+                    break;
+                case 'completed':
+                    title = 'اكتمال الرحلة';
+                    message = `اكتملت الرحلة "${trip.title}" بنجاح`;
+                    break;
+                case 'cancelled':
+                    title = 'إلغاء الرحلة';
+                    message = `تم إلغاء الرحلة "${trip.title}"`;
+                    break;
+                default:
+                    title = 'تحديث الرحلة';
+                    message = `تم تحديث الرحلة "${trip.title}"`;
+            }
 
-    if (tokens.length === 0) return;
+            await this.createNotification({
+                userId: userId || trip.user_id,
+                type: 'trip',
+                title,
+                message,
+                data: {
+                    tripId,
+                    tripTitle: trip.title,
+                    action,
+                    vehicleName: trip.vehicle_name,
+                    driverName: trip.driver_name
+                }
+            });
 
-    const message = {
-      notification: {
-        title: `${alert.type} Alert - ${alert.severity}`,
-        body: alert.message
-      },
-      data: {
-        alertId: alert._id.toString(),
-        type: alert.type,
-        severity: alert.severity
-      },
-      tokens: tokens
-    };
-
-    return admin.messaging().sendMulticast(message);
-  }
-
-  async sendTripNotification(trip, status) {
-    const message = this.getTripStatusMessage(status, trip);
-    
-    return this.sendAlert({
-      type: 'trip',
-      severity: 'low',
-      vehicle: trip.vehicle,
-      driver: trip.driver,
-      company: trip.company,
-      message: message
-    });
-  }
-
-  getTripStatusMessage(status, trip) {
-    switch (status) {
-      case 'created':
-        return `New trip created for vehicle ${trip.vehicle}`;
-      case 'inProgress':
-        return `Trip started for vehicle ${trip.vehicle}`;
-      case 'completed':
-        return `Trip completed for vehicle ${trip.vehicle}`;
-      case 'cancelled':
-        return `Trip cancelled for vehicle ${trip.vehicle}`;
-      default:
-        return `Trip status updated to ${status} for vehicle ${trip.vehicle}`;
+        } catch (error) {
+            console.error('Error sending trip notification:', error);
+            throw error;
+        }
     }
-  }
+
+    static async getUserNotifications(userId, options = {}) {
+        try {
+            const {
+                limit = 20,
+                offset = 0,
+                unreadOnly = false
+            } = options;
+
+            const query = `
+                SELECT *
+                FROM notifications
+                WHERE user_id = :userId
+                ${unreadOnly ? 'AND is_read = false' : ''}
+                ORDER BY created_at DESC
+                LIMIT :limit OFFSET :offset
+            `;
+
+            const notifications = await sequelize.query(query, {
+                replacements: { userId, limit, offset },
+                type: sequelize.QueryTypes.SELECT
+            });
+
+            return notifications;
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            throw error;
+        }
+    }
+
+    static async markAsRead(notificationId, userId) {
+        try {
+            const query = `
+                UPDATE notifications
+                SET 
+                    is_read = true,
+                    read_at = CURRENT_TIMESTAMP
+                WHERE id = :notificationId
+                AND user_id = :userId
+                RETURNING id
+            `;
+
+            const [result] = await sequelize.query(query, {
+                replacements: { notificationId, userId },
+                type: sequelize.QueryTypes.UPDATE
+            });
+
+            return result.length > 0;
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+            throw error;
+        }
+    }
+
+    static async markAllAsRead(userId) {
+        try {
+            const query = `
+                UPDATE notifications
+                SET 
+                    is_read = true,
+                    read_at = CURRENT_TIMESTAMP
+                WHERE user_id = :userId
+                AND is_read = false
+            `;
+
+            await sequelize.query(query, {
+                replacements: { userId },
+                type: sequelize.QueryTypes.UPDATE
+            });
+
+            return true;
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+            throw error;
+        }
+    }
 }
 
-module.exports = new NotificationService();
+module.exports = NotificationService;

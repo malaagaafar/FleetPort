@@ -28,12 +28,12 @@ class LocationService {
                     parts.push(address.neighbourhood);
                 }
 
-                return parts.join('، ') || 'عنوان غير معروف';
+                return parts.join('، ') || 'Address not found';
             }
-            return 'عنوان غير معروف';
+            return 'Address not found';
         } catch (error) {
             console.error('Error getting address:', error);
-            return 'عنوان غير معروف';
+            return 'Address not found';
         }
     }
 }

@@ -45,15 +45,22 @@ class SimulatorService {
         const latOffset = (Math.random() - 0.5) * 0.02;
         const lngOffset = (Math.random() - 0.5) * 0.02;
         const now = new Date();
+        const device_Time= new Date('2024-12-08T02:45:59.424Z');
+
+        console.log(device_Time);
+        //const startTime = new Date('2024-12-08T01:45:59.424Z').getTime();
+        //const endTime = new Date('2024-12-08T04:26:54.628Z').getTime();
         
+        // اختيار وقت عشوائي بين البداية والنهاية
+        //const now = new Date(startTime + Math.random() * (endTime - startTime));
         const positionId = this.positionIdCounter++;
         
         return {
             id: positionId,
             deviceId: deviceId,
             protocol: 'simulator',
-            deviceTime: now,
-            fixTime: now,
+            deviceTime: new Date('2024-12-08T02:45:59.424Z'),
+            fixTime: new Date('2024-12-08T02:45:59.424Z'),
             serverTime: now,
             outdated: false,
             valid: true,

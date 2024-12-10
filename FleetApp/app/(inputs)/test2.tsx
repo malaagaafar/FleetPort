@@ -1,152 +1,204 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TextInput, 
+  TouchableOpacity, 
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  ActivityIndicator
+} from 'react-native';
+import { useState } from 'react';
+import MapView, { Marker, Circle } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
+import api from '@/config/api';
 import { RootState } from '@/store/store';
-import MapView, { Marker } from 'react-native-maps';
+import { debounce } from 'lodash';
 
-export default function HomeScreen() {
+export default function AddGeofence() {
   const router = useRouter();
+  const userId = useSelector((state: RootState) => state.auth.user?.id);
+  
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [radius, setRadius] = useState('100');
+  const [center, setCenter] = useState({
+    latitude: 43.7184,
+    longitude: -79.5181
+  });
+  const [address, setAddress] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
 
-  const fleetSummary = {
-    inactiveVehicles: 2,
-    activeVehicles: 5,
-    activeTrips: 4,
-    alerts: 10,
-    upcomingEvents: 8,
-    tripRequests: 1
+  const handleMapPress = (e) => {
+    setCenter(e.nativeEvent.coordinate);
   };
 
-  const vehicles = [
-    {
-      id: 1,
-      status: 'active',
-      vehicle: 'Volvo 320C',
-      location: 'GTA, North York 36.1L/68',
-      driver: 'Yasser Mohamed',
-      event: 'On Trip 304'
-    },
-    {
-      id: 2,
-      status: 'inactive',
-      vehicle: 'Mercedes 250C',
-      location: 'Parking lot 1',
-      driver: 'Ali Ahmed',
-      event: 'Parked'
+  const searchAddress = async (query) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
     }
-  ];
 
-  const drivers = [
-    { id: 1, name: 'Yasser G.', score: 4.8 },
-    { id: 2, name: 'Yasser G.', score: 4.5 },
-    { id: 3, name: 'Yasser G.', score: 4.7 },
-    { id: 4, name: 'Yasser G.', score: 4.6 }
-  ];
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`
+      );
+      const data = await response.json();
+      setSearchResults(data);
+    } catch (error) {
+      console.error('Error searching address:', error);
+      Alert.alert('Error', 'Failed to search address');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const debouncedSearch = debounce(searchAddress, 500);
+
+  const handleAddressChange = (text) => {
+    setAddress(text);
+    debouncedSearch(text);
+  };
+
+  const handleSelectLocation = (item) => {
+    const newCenter = {
+      latitude: parseFloat(item.lat),
+      longitude: parseFloat(item.lon)
+    };
+    setCenter(newCenter);
+    setAddress(item.display_name);
+    setSearchResults([]);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      if (!name || !radius) {
+        Alert.alert('Error', 'Please fill all required fields');
+        return;
+      }
+
+      const response = await api.post('/geofences', {
+        name,
+        description,
+        radius: parseFloat(radius),
+        center: {
+          type: 'Point',
+          coordinates: [center.longitude, center.latitude]
+        },
+        user_id: userId
+      });
+
+      if (response.data.success) {
+        Alert.alert('Success', 'Geofence created successfully');
+        router.back();
+      }
+    } catch (error) {
+      console.error('Error creating geofence:', error);
+      Alert.alert('Error', 'Failed to create geofence');
+    }
+  };
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header with Logo and Icons */}
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <MapView
+        style={styles.map}
+        initialRegion={{
+          ...center,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
+        onPress={handleMapPress}
+      >
+        <Marker coordinate={center} />
+        <Circle
+          center={center}
+          radius={parseFloat(radius)}
+          fillColor="rgba(0, 0, 255, 0.1)"
+          strokeColor="rgba(0, 0, 255, 0.5)"
+        />
+      </MapView>
 
-      {/* Fleet Summary */}
-      <View style={styles.summarySection}>
-        <Text style={styles.sectionTitle}>Fleet Summary</Text>
-        <View style={styles.summaryGrid}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>{fleetSummary.inactiveVehicles}</Text>
-            <Text style={styles.summaryLabel}>Inactive{'\n'}Vehicles</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>{fleetSummary.activeVehicles}</Text>
-            <Text style={styles.summaryLabel}>Active{'\n'}Vehicles</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>{fleetSummary.activeTrips}</Text>
-            <Text style={styles.summaryLabel}>Active{'\n'}Trips</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>{fleetSummary.alerts}</Text>
-            <Text style={styles.summaryLabel}>Alerts</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>{fleetSummary.upcomingEvents}</Text>
-            <Text style={styles.summaryLabel}>Upcoming{'\n'}Events</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>{fleetSummary.tripRequests}</Text>
-            <Text style={styles.summaryLabel}>Trip{'\n'}Request</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Map Section */}
-      <View style={styles.mapContainer}>
-        <MapView
-          style={styles.map}
-          initialRegion={{
-            latitude: 43.7184,
-            longitude: -79.5181,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
-          }}
-        >
-          {vehicles.map((vehicle) => (
-            <Marker
-              key={vehicle.id}
-              coordinate={{
-                latitude: 43.7184,
-                longitude: -79.5181,
-              }}
-              title={vehicle.vehicle}
-              description={vehicle.driver}
+      <ScrollView style={styles.formContainer}>
+        <View style={styles.form}>
+            
+        <View style={styles.inputGroup}>
+            <Text style={styles.label}>Name *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter geofence name"
+              value={name}
+              onChangeText={setName}
             />
-          ))}
-        </MapView>
-      </View>
-
-      {/* Vehicles List */}
-      <View style={styles.vehiclesSection}>
-        {vehicles.map(vehicle => (
-          <TouchableOpacity key={vehicle.id} style={styles.vehicleCard}>
-            <View style={[styles.statusIndicator, 
-              { backgroundColor: vehicle.status === 'active' ? '#4CAF50' : '#999' }]} />
-            <View style={styles.vehicleInfo}>
-              <Text style={styles.vehicleTitle}>Vehicle: {vehicle.vehicle}</Text>
-              <Text style={styles.vehicleDetail}>Location: {vehicle.location}</Text>
-              <Text style={styles.vehicleDetail}>Driver: {vehicle.driver}</Text>
-              <Text style={styles.vehicleDetail}>Event: {vehicle.event}</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={24} color="#999" />
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Driver Scores */}
-      <View style={styles.driversSection}>
-        <Text style={styles.sectionTitle}>Driver Score:</Text>
-        <Text style={styles.driverScoreHint}>select a driver to show their score:</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.driversScroll}>
-          {drivers.map(driver => (
-            <View key={driver.id} style={styles.driverScore}>
-              <View style={styles.driverAvatar}>
-                <Text style={styles.driverInitial}>{driver.name[0]}</Text>
+          </View>
+          
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Search Location</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Search by address"
+              value={address}
+              onChangeText={handleAddressChange}
+            />
+            {isSearching && (
+              <ActivityIndicator style={styles.searchingIndicator} />
+            )}
+            {searchResults.length > 0 && (
+              <View style={styles.searchResults}>
+                {searchResults.map((result, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.searchResultItem}
+                    onPress={() => handleSelectLocation(result)}
+                  >
+                    <Text style={styles.searchResultText}>
+                      {result.display_name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-              <Text style={styles.driverName}>{driver.name}</Text>
-              <Text style={styles.driverScoreNumber}>{driver.score}</Text>
-            </View>
-          ))}
-          <TouchableOpacity style={styles.addDriverButton}>
-            <MaterialIcons name="add" size={24} color="#007AFF" />
-            <Text style={styles.addDriverText}>Add Driver</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+            )}
+          </View>
+          
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Radius (meters) *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter radius in meters"
+              value={radius}
+              onChangeText={setRadius}
+              keyboardType="numeric"
+            />
+          </View>
 
-      {/* Maintenance Report Section */}
-      <View style={styles.maintenanceSection}>
-        <Text style={styles.sectionTitle}>Maintenance Report</Text>
-        {/* Add maintenance report content here */}
-      </View>
-    </ScrollView>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Enter description (optional)"
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={3}
+            />
+          </View>
+
+          <TouchableOpacity 
+            style={styles.submitButton}
+            onPress={handleSubmit}
+          >
+            <Text style={styles.submitButtonText}>Create Geofence</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -155,144 +207,73 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    paddingTop: 50,
-  },
-  logo: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconSpace: {
-    marginHorizontal: 15,
-  },
-  summarySection: {
-    padding: 15,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 15,
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  summaryItem: {
-    width: '16%',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  summaryNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    textAlign: 'center',
-    color: '#666',
-  },
-  mapContainer: {
-    height: 200,
-    backgroundColor: '#f0f0f0',
-    marginBottom: 15,
-    overflow: 'hidden',
-  },
   map: {
-    width: '100%',
-    height: '100%',
+    height: '50%',
   },
-  vehiclesSection: {
-    padding: 15,
+  formContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
-  vehicleCard: {
-    flexDirection: 'row',
+  form: {
+    padding: 16,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: '#fff',
+    fontSize: 16,
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  submitButton: {
+    backgroundColor: '#000',
+    padding: 16,
+    borderRadius: 8,
     alignItems: 'center',
-    padding: 15,
+    marginTop: 16,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  searchingIndicator: {
+    position: 'absolute',
+    right: 10,
+    top: 45,
+  },
+  searchResults: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
     backgroundColor: '#fff',
     borderRadius: 8,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    zIndex: 1000,
+    maxHeight: 200,
   },
-  statusIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 15,
+  searchResultItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  vehicleInfo: {
-    flex: 1,
-  },
-  vehicleTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  vehicleDetail: {
+  searchResultText: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 2,
+    color: '#333',
   },
-  driversSection: {
-    padding: 15,
-  },
-  driverScoreHint: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 15,
-  },
-  driversScroll: {
-    flexDirection: 'row',
-  },
-  driverScore: {
-    alignItems: 'center',
-    marginRight: 20,
-  },
-  driverAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#f0f0f0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 5,
-  },
-  driverInitial: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  driverName: {
-    fontSize: 14,
-    marginBottom: 2,
-  },
-  driverScoreNumber: {
-    fontSize: 14,
-    color: '#666',
-  },
-  addDriverButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 10,
-  },
-  addDriverText: {
-    color: '#007AFF',
-    fontSize: 14,
-    marginTop: 5,
-  },
-  maintenanceSection: {
-    padding: 15,
-  },
-});
+}); 

@@ -1,1299 +1,1553 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Switch } from 'react-native';
-import { useState } from 'react';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router'; // استيراد useRouter
+import { useCallback, useEffect, useState } from 'react'; // استيراد useState
+import api from '@/config/api';
+import { RootState } from '@/store/store';
+import { useSelector } from 'react-redux';
+import { Image } from 'react-native'; // تأكد من استيراد Image
+import { RefreshControl } from 'react-native'; // أضف هذا الاستيراد
+import React from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 
-export default function PartnerScreen() {
-  const [activeTab, setActiveTab] = useState('Marketplace');
-  const [isCarrierModeActive, setIsCarrierModeActive] = useState(false);
 
-  // بيانات تجريبية متنوعة للعروض
-  const marketplaceData = [
-    {
-      id: 1,
-      company: 'cPORT Corporation',
-      rating: 5,
-      pickupDate: '20 Oct, 2024',
-      pickupLocation: '858 Eglinton Ave East, ON',
-      deliveryDate: '20 Oct, 2024',
-      deliveryLocation: '180 Malvern St, ON',
-      price: 'C$10,582',
-      distance: '43km',
-      vehicleType: 'Long-haul reefer truck',
-    },
-    {
-      id: 2,
-      company: 'FastFreight Ltd',
-      rating: 4,
-      pickupDate: '21 Oct, 2024',
-      pickupLocation: '725 Queen Street West, ON',
-      deliveryDate: '21 Oct, 2024',
-      deliveryLocation: '445 King Street East, ON',
-      price: 'C$8,750',
-      distance: '35km',
-      vehicleType: 'Box truck',
-    },
-    {
-      id: 3,
-      company: 'TransCargo Express',
-      rating: 5,
-      pickupDate: '22 Oct, 2024',
-      pickupLocation: '120 Bloor Street East, ON',
-      deliveryDate: '22 Oct, 2024',
-      deliveryLocation: '890 Bay Street, ON',
-      price: 'C$12,300',
-      distance: '50km',
-      vehicleType: 'Flatbed truck',
-    },
-    {
-      id: 4,
-      company: 'GTA Logistics',
-      rating: 4,
-      pickupDate: '23 Oct, 2024',
-      pickupLocation: '300 Borough Drive, ON',
-      deliveryDate: '23 Oct, 2024',
-      deliveryLocation: '1 Dundas Street East, ON',
-      price: 'C$9,450',
-      distance: '28km',
-      vehicleType: 'Container truck',
-    },
-    {
-      id: 5,
-      company: 'Ontario Express',
-      rating: 5,
-      pickupDate: '24 Oct, 2024',
-      pickupLocation: '220 Yonge Street, ON',
-      deliveryDate: '24 Oct, 2024',
-      deliveryLocation: '789 Don Mills Road, ON',
-      price: 'C$11,800',
-      distance: '45km',
-      vehicleType: 'Long-haul truck',
+export default function ManageScreen() {
+  const router = useRouter(); // استخدام useRouter
+  const [activeTab, setActiveTab] = useState('Trips'); // الحالة لتتبع التبويب النشط
+  const [vehicles, setVehicles] = useState([]); // الحالة لتخزين بيانات المركبات
+  const userId = useSelector((state: RootState) => state.auth.user?.id);
+  const [refreshing, setRefreshing] = useState(false);
+  const [drivers, setDrivers] = useState([]);
+  const [driversAssignment, setDriversAssignment] = useState([]);
+  const [trips, setTrips] = useState({
+    upcoming: [],
+    active: [],
+    history: []
+  });
+  const [services, setServices] = useState({
+    upcoming: [],
+    active: [],
+    history: []
+  });
+
+  const getCityName = async (coordinates) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coordinates[1]}&lon=${coordinates[0]}&zoom=18&accept-language=en`
+      );
+      const data = await response.json();
+      
+      // ترتيب الأولوية من الأصغر إلى الأكبر
+      return data.address.suburb || // الحي
+             data.address.village || // القرية
+             data.address.town || // البلدة
+             data.address.city || // المدينة
+             data.address.county || // المقاطعة
+             data.address.state || // المحافظة/الولاية
+             'Unknown';
+    } catch (error) {
+      console.error('Error getting location name:', error);
+      return 'Unknown';
     }
-  ];
-
-  // بيانات الشركاء
-  const partnersData = [
-    {
-      id: 1,
-      name: 'TransCargo Express',
-      type: 'Carrier',
-      partnerType: 'platform',
-      rating: 4.8,
-      totalTrips: 156,
-      lastTrip: '15 Oct, 2024',
-      status: 'Active',
-      verified: true,
-      contactPerson: 'John Smith',
-      phone: '+1 (416) 555-0123',
-      email: 'contact@transcargo.com',
-      preferredRoutes: ['Toronto-Montreal', 'Toronto-Ottawa'],
-      vehicleTypes: ['Reefer', 'Flatbed'],
-      contractStatus: 'Valid until Dec 2024',
-      paymentTerms: 'Net 30',
-      performance: {
-        onTime: '95%',
-        satisfaction: '4.8',
-        reliability: '4.9'
-      }
-    },
-    {
-      id: 2,
-      name: 'LogiTrade Solutions',
-      type: 'Broker',
-      partnerType: 'platform',
-      rating: 4.9,
-      totalTrips: 312,
-      lastTrip: '19 Oct, 2024',
-      status: 'Active',
-      verified: true,
-      contactPerson: 'Michael Chen',
-      phone: '+1 (416) 555-8899',
-      email: 'operations@logitrade.com',
-      performance: {
-        successfulDeals: 312,
-        averageResponse: '30min',
-        satisfactionRate: '98%',
-        averageSavings: '12%'
-      },
-      specialties: ['Cross-border', 'Temperature-controlled', 'Expedited'],
-      coverage: ['Canada', 'USA'],
-      paymentTerms: 'Net 15',
-      insuranceCoverage: 'C$5M',
-      contractStatus: 'Valid until Dec 2024',
-      preferredLanes: [
-        'Toronto-Chicago',
-        'Montreal-New York',
-        'Vancouver-Seattle'
-      ]
-    },
-    {
-      id: 3,
-      name: 'Custom Partner Co',
-      type: 'Carrier',
-      partnerType: 'custom',
-      addedDate: '10 Oct, 2024',
-      contactPerson: 'Sarah Johnson',
-      phone: '+1 (416) 555-0456',
-      email: 'contact@custompartner.com',
-      notes: 'Local carrier, preferred for GTA routes',
-    }
-  ];
-
-  // بيانات الناقلين المتاحين
-  const availableCarriers = [
-    {
-      id: 1,
-      name: 'Elite Transport Co',
-      type: 'Carrier',
-      status: 'Available',
-      rating: 4.9,
-      fleetSize: 12,
-      vehicleTypes: ['Reefer', 'Flatbed', 'Box'],
-      currentLocation: 'Toronto, ON',
-      preferredRoutes: ['GTA', 'Toronto-Montreal'],
-      ratePerKm: 'C$2.5',
-      availability: 'Immediate',
-      verificationStatus: 'Verified',
-      performance: {
-        completedTrips: 234,
-        onTimeDelivery: '98%',
-        satisfaction: 4.8
-      }
-    },
-    // ... المزيد من الناقلين
-  ];
-
-  // حالة التحقق كناقل
-  const carrierVerificationStatus = {
-    status: 'pending', // 'pending' | 'verified' | 'not_verified'
-    fleetSize: 5, // من بيانات الأسطول الحالية
-    availableVehicles: 3,
-    completedTrips: 125,
-    rating: 4.7,
-    // يمكن جلب هذه البيانات من حساب المستخدم
   };
 
-  const renderStars = (rating) => {
-    return [...Array(5)].map((_, index) => (
-      <Ionicons
-        key={index}
-        name={index < rating ? 'star' : 'star-outline'}
-        size={16}
-        color="#FFD700"
-      />
-    ));
+  // تحسين عرض النتيجة في البطاقة
+  const renderLocationName = (locationKey, tripId) => {
+    const name = cityNames[`${locationKey}-${tripId}`];
+    if (!name) return <Text style={styles.cityName}>Loading...</Text>;
+    
+    return (
+      <Text style={styles.cityName} numberOfLines={2} ellipsizeMode="tail">
+        {name}
+      </Text>
+    );
   };
 
-  const renderPartnersList = () => (
-    <ScrollView style={styles.listContainer}>
-      <TouchableOpacity style={styles.addPartnerButton} onPress={() => {/* إضافة شريك جديد */}}>
-        <MaterialIcons name="add-business" size={24} color="#007AFF" />
-        <Text style={styles.addPartnerText}>Add New Partner</Text>
-      </TouchableOpacity>
+  // تخزين أسماء المدن في state لتجنب الطلبات المتكررة
+  const [cityNames, setCityNames] = useState({});
 
-      {partnersData.map((partner) => (
-        renderPartnerCard(partner)
-      ))}
-    </ScrollView>
+  useEffect(() => {
+    // تحديث أسماء المدن عند تغير الرحلات
+    const updateCityNames = async () => {
+      const newCityNames = {};
+      
+      for (const trip of [...trips.upcoming, ...trips.active, ...trips.history]) {
+        if (!cityNames[`start-${trip.id}`]) {
+          newCityNames[`start-${trip.id}`] = await getCityName(trip.start_location.coordinates);
+        }
+        if (!cityNames[`end-${trip.id}`]) {
+          newCityNames[`end-${trip.id}`] = await getCityName(trip.end_location.coordinates);
+        }
+      }
+      
+      setCityNames(prev => ({ ...prev, ...newCityNames }));
+    };
+    
+    updateCityNames();
+  }, [trips]);
+
+  const fetchVehicles = async () => {
+    try {
+      //const response = await api.get(`/vehicles?userId=${userId}`); // إضافة معرف المستخدم في الطلب
+      //setVehicles(response.data); // تخزين البيانات في الحالة
+      //console.log(response.data);
+      const response = await api.get(`/assignments/assigned-vehicle-devices?userId=${userId}`); // إضافة معرف المستخدم في الطلب
+      setVehicles(response.data); // تخزين البيانات في الحالة
+      //console.log(response.data);
+    } catch (error) {
+      console.error('Error fetching vehicles:', error);
+    }
+  };
+
+  const fetchDrivers = async () => {
+    try {
+      //const response = await api.get(`/drivers/company?userId=${userId}`);
+      //setDrivers(response.data);
+      //console.log("res", response.data);
+      const response = await api.get(`/assignments/assigned-driver-vehicles?userId=${userId}`);
+      setDrivers(response.data);
+      //console.log("ass", response.data);
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+    }
+  };
+
+  const fetchTrips = async () => {
+    try {
+      const response = await api.get(`/trips?userId=${userId}`);
+      
+      // تصنيف الرحلات حسب مواعيدها
+      const now = new Date();
+      const categorizedTrips = response.data.reduce((acc: any, trip: any) => {
+        const tripStartDate = new Date(trip.scheduled_start);
+        const tripEndDate = new Date(trip.scheduled_end);
+        
+        if (tripStartDate > now) {
+          // الرحلات التي لم يحن موعدها بعد
+          acc.upcoming.push(trip);
+        } else if (tripStartDate <= now && tripEndDate > now) {
+          // الرحلات التي بدأت ولم تنتهي بعد
+          acc.active.push(trip);
+        } else if (tripEndDate <= now) {
+          // الرحلات التي انتهت
+          acc.history.push(trip);
+        }
+        
+        return acc;
+      }, { upcoming: [], active: [], history: [] });
+
+      // ترتيب كل قسم حسب التاريخ
+      categorizedTrips.upcoming.sort((a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start));
+      categorizedTrips.active.sort((a, b) => new Date(b.scheduled_start) - new Date(a.scheduled_start));
+      categorizedTrips.history.sort((a, b) => new Date(b.scheduled_end) - new Date(a.scheduled_end));
+
+      //console.log('Categorized trips:', categorizedTrips);
+      setTrips(categorizedTrips);
+    } catch (error) {
+      console.error('Error fetching trips:', error);
+    }
+  };
+
+  const fetchServices = async () => {
+    try {
+      const response = await api.get('/maintenance/maintenances');
+      const allServices = response.data.data;
+
+      // تصنيف الخدمات
+      const categorizedServices = {
+        upcoming: allServices.filter(s => s.status === 'scheduled'),
+        active: allServices.filter(s => s.status === 'in_progress'),
+        history: allServices.filter(s => ['completed', 'cancelled'].includes(s.status))
+      };
+
+      setServices(categorizedServices);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchServices();
+    }, [])
   );
 
-  const renderPartnerCard = (partner) => (
-    <TouchableOpacity key={partner.id} style={styles.partnerCard}>
-      <View style={styles.partnerHeader}>
-        <View style={styles.partnerInfo}>
-          <Text style={styles.partnerName}>{partner.name}</Text>
-          <View style={[
-            styles.partnerType,
-            partner.type === 'Broker' && styles.brokerType
-          ]}>
-            <Text style={[
-              styles.partnerTypeText,
-              partner.type === 'Broker' && styles.brokerTypeText
-            ]}>{partner.type}</Text>
-          </View>
-          {partner.partnerType === 'platform' && (
-            <View style={styles.verifiedBadge}>
-              <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
-              <Text style={styles.verifiedText}>Verified {partner.type}</Text>
-            </View>
-          )}
-        </View>
-        
-        {partner.partnerType === 'platform' && (
-          <View style={styles.statusContainer}>
-            <View style={[styles.statusIndicator, 
-              { backgroundColor: partner.status === 'Active' ? '#4CAF50' : '#FFA000' }]} />
-            <Text style={styles.statusText}>{partner.status}</Text>
-          </View>
-        )}
-      </View>
+  const getServiceIcon = (type: string) => {
+    switch (type) {
+      case 'oil_change':
+        return require('../../assets/icons/oil-in.png');
+      case 'tire_service':
+        return require('../../assets/icons/tire-in.png');
+      case 'engine_service':
+        return require('../../assets/icons/car-engine.png');
+      default:
+        return require('../../assets/icons/car-engine.png');
+    }
+  };
 
-      {partner.partnerType === 'platform' && partner.type === 'Broker' ? (
-        // عرض خاص للوسطاء
-        <View style={styles.brokerPerformance}>
-          <View style={styles.performanceRow}>
-            <View style={styles.performanceItem}>
-              <Text style={styles.performanceLabel}>Successful Deals</Text>
-              <Text style={styles.performanceValue}>{partner.performance.successfulDeals}</Text>
-            </View>
-            <View style={styles.performanceItem}>
-              <Text style={styles.performanceLabel}>Avg. Response</Text>
-              <Text style={styles.performanceValue}>{partner.performance.averageResponse}</Text>
-            </View>
-            <View style={styles.performanceItem}>
-              <Text style={styles.performanceLabel}>Satisfaction</Text>
-              <Text style={styles.performanceValue}>{partner.performance.satisfactionRate}</Text>
-            </View>
+  const renderServiceCard = (service) => (
+    <View style={styles.serviceCard} key={service.id}>
+      <View style={styles.serviceDetails}>
+        <View style={styles.serviceIconContainer}>
+          <Image 
+            source={getServiceIcon(service.type)}
+            style={styles.serviceIcon}
+          />
+        </View>
+        <View style={styles.serviceInfo}>
+          <View style={styles.serviceRow}>
+            <Text style={styles.serviceLabel}>Service:</Text>
+            <Text style={styles.serviceValue}>
+              {service.type.replace(/_/g, ' ').toUpperCase()}
+            </Text>
           </View>
-          <View style={styles.specialtiesContainer}>
-            {partner.specialties.map((specialty, index) => (
-              <View key={index} style={styles.specialtyTag}>
-                <Text style={styles.specialtyText}>{specialty}</Text>
+          <View style={styles.serviceRow}>
+            <Text style={styles.serviceLabel}>Vehicle:</Text>
+            <Text style={styles.serviceValue}>{service.vehicle_name}</Text>
+          </View>
+          <View style={styles.serviceRow}>
+            <Text style={styles.serviceLabel}>Status:</Text>
+            <Text style={styles.serviceValue}>{service.status}</Text>
+          </View>
+          <View style={styles.serviceRow}>
+            <Text style={styles.serviceLabel}>Provider:</Text>
+            <Text style={styles.serviceValue}>{service.custom_provider_name}</Text>
+          </View>
+        </View>
+        <TouchableOpacity style={styles.serviceArrow}>
+          <Text style={styles.arrowText}>▶</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderServiceSection = (title: string, services: any[]) => (
+    <View style={styles.section}>
+      <Text style={styles.sectionSubtitle}>{title}</Text>
+      {services.map(service => {
+        const date = new Date(service.scheduled_date);
+        return (
+          <View key={service.id}>
+            <Text style={styles.serviceDate}>
+              {date.toLocaleDateString('en-US', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+              })}
+            </Text>
+            {renderServiceCard(service)}
+          </View>
+        );
+      })}
+    </View>
+  );
+
+  const renderServicesTab = () => {
+    return (
+      <View style={styles.servicesSection}>
+        <Text style={styles.sectionTitle}>Manage Services</Text>
+        
+        <View style={styles.actionButtons}>
+          <View style={styles.tripButtonsRow}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.grayButton, styles.twoThirdButton]} 
+              onPress={() => router.push('/(inputs)/ScheduleService')}
+            >
+              <Text style={styles.grayButtonText}>Schedule New Service</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.grayButton, styles.oneThirdButton]} 
+              onPress={() => {}}
+            >
+              <Text style={styles.grayButtonText}>Edit Service</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.greenButton]}
+            onPress={() => {}}
+          >
+            <Text style={styles.greenButtonText}>Start Scheduled Service</Text>
+          </TouchableOpacity>
+        </View>
+
+        {renderServiceSection('Upcoming', services.upcoming)}
+        {renderServiceSection('Active', services.active)}
+        {renderServiceSection('History', services.history)}
+      </View>
+    );
+  };
+
+  useEffect(() => {
+    fetchVehicles(); // استدعاء الدالة لجلب البيانات عند تحميل المكون
+    if (activeTab === 'Drivers') {
+      fetchDrivers();
+    }
+    if (activeTab === 'Trips') {
+      fetchTrips();
+    }
+  }, [activeTab]); // [] تعني أن الدالة ستنفذ مرة واحدة عند تحميل المكون
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // إعادة تحميل البيانات
+      await fetchVehicles();
+      await fetchDrivers();
+      await fetchTrips();
+      await fetchServices();
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [userId]);
+
+
+  const navigateToForm = () => {
+    console.log(activeTab);
+    if (activeTab === 'Vehicles') {
+      router.push('/(inputs)/AddVehicle'); // تغيير المسار حسب هيكل مشروعك
+    } else if (activeTab === 'Drivers') {
+      router.push('/(inputs)/AddDriver'); // تغيير المسار حسب هيكل مشروعك
+    } else {
+      router.push('/(inputs)/AddVehicle'); // تغيير المسار حسب هيكل مشروعك
+    }
+  };
+
+  /*const renderVehiclesList = () => {
+    return (
+      <View style={styles.vehiclesListContainer}>
+        {vehicles.map((vehicle, index) => (
+          <View key={index} style={styles.vehicleItem}>
+            <View style={[styles.vehicleIcon, getStatusStyle(vehicle.status)]}>
+              {vehicle.alerts > 0 && <Text style={styles.alertCount}>{vehicle.alerts}</Text>}
+              {vehicle.vehicle_image && ( // تحقق من وجود صورة المركبة
+              <Image 
+                  source={{ uri: vehicle.vehicle_image }} // استخدام عنوان URL للصورة
+                  style={styles.vehicleImage} // إضافة نمط للصورة
+                />
+              )}
+            </View>
+            <Text style={styles.vehicleName}>{vehicle.make} {vehicle.model}</Text>
+          </View>
+        ))}
+      </View>
+    );
+  };*/
+  
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'active':
+        return { borderColor: '#4CD964' }; // لون الحدود للمركبة النشطة
+      case 'warning':
+        return { borderColor: 'red' }; // لون الحدود للمركبة التي بها تحذير
+      case 'inactive':
+        return { borderColor: 'gray' }; // لون الحدود للمركبة غير النشطة
+      default:
+        return {};
+    }
+  };
+
+  
+  const maintenanceTasks = [
+    {
+      id: 1,
+      icon: require('../../assets/icons/fuel-in.png'),
+      task: 'Fuel Refill',
+      vehicle: 'Volvo 320C',
+      measure: '10%',
+    },
+    {
+      id: 2,
+      icon: require('../../assets/icons/oil-in.png'),
+      task: 'Oil Change',
+      vehicle: 'Mercedes C2',
+      measure: '5%',
+    },
+    {
+      id: 3,
+      icon: require('../../assets/icons/tire-in.png'),
+      task: 'Tire Alignment',
+      vehicle: 'Volvo 320C',
+      measure: '-0.5°, 4.0°, 0.15°, 1/16 inch',
+    },
+  ];
+
+  
+  const maintenanceIcons = [
+    { id: 1, badge: 2, icon: require('../../assets/icons/car-oil-in.png') },
+    //{ id: 2, badge: 2, icon: require('../../assets/icons/diy.png') },
+    { id: 2, badge: 2, icon: require('../../assets/icons/fuel.png') },
+    { id: 3, badge: 2, icon: require('../../assets/icons/car-engine.png') },
+    { id: 4, badge: 2, icon: require('../../assets/icons/disc-brake.png') },
+    { id: 5, badge: 1, icon: require('../../assets/icons/temperature-in.png') },
+    { id: 6, badge: 1, icon: require('../../assets/icons/electric-service-in.png') },
+    //{ id: 8, badge: 1, icon: require('../../assets/icons/gauge.png') },
+    { id: 7, badge: 1, icon: require('../../assets/icons/condenser-coil.png') },
+    { id: 8, badge: 1, icon: require('../../assets/icons/car-battery.png') },
+    { id: 9, badge: 3, icon: require('../../assets/icons/schedule.png') },
+    //{ id: 10, badge: 3, icon: require('../../assets/icons/inspection-in.png') },
+    { id: 11, badge: 3, icon: require('../../assets/icons/compressor.png') },
+    { id: 12, badge: 3, icon: require('../../assets/icons/monitoring.png') },
+    { id: 13, badge: 3, icon: require('../../assets/icons/steering-wheel-in.png') },
+  ];
+
+  const renderMaintenanceReport = () => (
+    <View style={styles.maintenanceSection}>
+      <View style={styles.header}>
+        <Text style={styles.maintenanceTitle}>Maintenance Report</Text>
+      </View>
+      
+      <View style={styles.iconsContainer}>
+        <View style={styles.iconRow}>
+          {maintenanceIcons.slice(0, 4).map((item) => (
+            <TouchableOpacity key={item.id} style={styles.iconWrapper}>
+              <View style={styles.iconBox}>
+                <Image source={item.icon} style={styles.maintenanceIcon} />
+                {item.badge > 0 && (
+                  <View style={styles.redBadge}>
+                    <Text style={styles.badgeText}>{item.badge}</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+  
+        <View style={styles.iconRow}>
+          {maintenanceIcons.slice(4, 8).map((item) => (
+            <TouchableOpacity key={item.id} style={styles.iconWrapper}>
+              <View style={styles.iconBox}>
+                <Image source={item.icon} style={styles.maintenanceIcon} />
+                {item.badge > 0 && (
+                  <View style={styles.redBadge}>
+                    <Text style={styles.badgeText}>{item.badge}</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+  
+        <View style={styles.iconRow}>
+          {maintenanceIcons.slice(8, 12).map((item) => (
+            <TouchableOpacity key={item.id} style={styles.iconWrapper}>
+              <View style={styles.iconBox}>
+                <Image source={item.icon} style={styles.maintenanceIcon} />
+                {item.badge > 0 && (
+                  <View style={styles.redBadge}>
+                    <Text style={styles.badgeText}>{item.badge}</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+  
+      <ScrollView style={styles.tasksContainer} showsVerticalScrollIndicator={false}>
+        {maintenanceTasks.map((task) => (
+          <View key={task.id} style={styles.taskCard}>
+            <View style={styles.taskLeft}>
+              <View style={styles.taskIconContainer}>
+                <Image source={task.icon} style={styles.taskIcon} />
+              </View>
+              <View style={styles.taskDetails}>
+                <View style={styles.taskRow}>
+                  <Text style={styles.label}>Task:</Text>
+                  <Text style={styles.value}>{task.task}</Text>
+                </View>
+                <View style={styles.taskRow}>
+                  <Text style={styles.label}>Vehicle:</Text>
+                  <Text style={styles.value}>{task.vehicle}</Text>
+                </View>
+                <View style={styles.taskRow}>
+                  <Text style={styles.label}>Measure:</Text>
+                  <Text style={styles.value}>{task.measure}</Text>
+                </View>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.scheduleButton}>
+              <Image 
+                source={require('../../assets/icons/add-event-in.png')} 
+                style={styles.scheduleIcon} 
+              />
+            </TouchableOpacity>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+  const renderVehiclesTab = () => {
+    return (
+      <View style={styles.vehiclesSection}>
+        <Text style={styles.sectionTitle}>Manage Vehicles</Text>
+                
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.grayButton]} 
+            onPress={navigateToForm}
+          >
+            <Text style={styles.grayButtonText}>Add a New Vehicle</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.greenButtonsContainer}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.greenButton]} 
+              onPress={() => router.push('/assign/DeviceVehicleAssignment')}
+            >
+              <Text style={styles.greenButtonText}>Assign Device to a Vehicle</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.greenButton]}
+              onPress={() => router.push('/assign/DriverVehicles')}
+            >
+              <Text style={styles.greenButtonText}>Assign Driver to a Vehicle</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+  
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionSubtitle}>Your Vehicles</Text>
+            <TouchableOpacity>
+              <Image 
+                source={require('../../assets/icons/sort.png')}
+                style={styles.moreButton}
+              />
+            </TouchableOpacity>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.vehiclesScroll}>
+            {vehicles.map((vehicle, index) => (
+              <View key={index} style={styles.vehicleCard}>
+                <View style={[styles.vehicleIcon, getStatusStyle(vehicle.status)]}>
+                  <Image 
+                    source={{ uri: vehicle.vehicle_image || 'https://your-default-image.png' }} 
+                    style={styles.vehicleImage}
+                    resizeMode="cover"
+                  />
+                  {vehicle.alerts > 0 && (
+                    <View style={styles.alertBadge}>
+                      <Text style={styles.alertCount}>{vehicle.alerts}</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.vehicleInfo}>
+                  <Text style={styles.vehicleName}>{vehicle.name}</Text>
+                  <Text style={styles.vehicleDetails}>
+                    {vehicle.make} {vehicle.model}
+                  </Text>
+                  {vehicle.device_name ? (
+                    <View style={styles.deviceInfo}>
+                      <Text style={styles.deviceName}>
+                        {vehicle.device_name}
+                      </Text>
+                      <Text style={styles.serialNumber}>
+                        {vehicle.device_serial_number}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.noDevice}>No device assigned</Text>
+                  )}
+                </View>
               </View>
             ))}
+          </ScrollView>
+        </View>
+      </View>
+    );
+  };
+
+  const renderDriversTab = () => {
+    return (
+      <View style={styles.driversSection}>
+        <Text style={styles.sectionTitle}>Manage Drivers</Text>
+        
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.grayButton]} 
+            onPress={() => router.push('/(inputs)/AddDriver')}
+          >
+            <Text style={styles.grayButtonText}>Add a New Driver</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.greenButton]}
+            onPress={() => router.push('/assign/DriverVehicles')}
+          >
+            <Text style={styles.greenButtonText}>Assign Driver to a Vehicle</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionSubtitle}>Your Drivers</Text>
+            <TouchableOpacity>
+              <Image 
+                source={require('../../assets/icons/sort.png')}
+                style={styles.moreButton}
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.driversScroll}>
+            {drivers.map((driver, index) => (
+              <View key={index} style={styles.driverCard}>
+                <View style={[styles.driverIcon, getStatusStyle(driver.status)]}>
+                <Image 
+                  source={{ uri: driver.profile_image || 'https://your-default-image.png' }}
+                  style={styles.driverImage}
+                  /> 
+                </View>
+                <View style={styles.driverInfo}>
+                  <Text style={styles.driverName}>
+                    {driver.first_name} {driver.last_name}
+                  </Text>
+                  {driver.vehicle_name ? (
+                    <View style={styles.assignedVehicleInfo}>
+                      <Text style={styles.assignedVehicleName}>
+                        {driver.vehicle_name}
+                      </Text>
+                      <Text style={styles.assignedVehiclePlate}>
+                        {driver.vehicle_plate_number}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.noAssignedVehicle}>No vehicle assigned</Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    );
+  };
+
+  const calculateProgress = async (trip) => {
+    try {
+      const deviceResponse = await api.get(`/device-assignments/vehicle-device/${trip.vehicle_id}`, {
+        params: { userId }
+      });
+      
+      const deviceId = deviceResponse.data.device_id;
+      if (!deviceId) return null;
+
+      const positionsResponse = await api.get(`/positions`, {
+        params: {
+          deviceId,
+          from: trip.actual_start || trip.scheduled_start,
+          to: new Date()
+        }
+      });
+
+      if (positionsResponse.data.length < 2) return { distance: 0, currentLocation: null };
+
+      const positions = positionsResponse.data;
+      let totalDistance = 0;
+      
+      // حساب المسافة الكلية
+      for (let i = 1; i < positions.length; i++) {
+        const prev = positions[i - 1];
+        const curr = positions[i];
+        
+        const R = 6371;
+        const dLat = (curr.latitude - prev.latitude) * Math.PI / 180;
+        const dLon = (curr.longitude - prev.longitude) * Math.PI / 180;
+        const a = 
+          Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(prev.latitude * Math.PI / 180) * Math.cos(curr.latitude * Math.PI / 180) * 
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+        
+        totalDistance += distance;
+      }
+
+      // الحصول على آخر موقع
+      const lastPosition = positions[positions.length - 1];
+      const currentLocation = await getCityName([lastPosition.longitude, lastPosition.latitude]);
+
+      return { 
+        distance: parseFloat(totalDistance.toFixed(2)),
+        currentLocation,
+        lastUpdate: new Date(lastPosition.device_time).toLocaleTimeString()
+      };
+    } catch (error) {
+      console.error('Error calculating distance:', error);
+      return null;
+    }
+  };
+
+  const [tripProgress, setTripProgress] = useState({});
+
+  useEffect(() => {
+    const updateProgress = async () => {
+      const newProgress = {};
+      for (const trip of trips.active) {
+        newProgress[trip.id] = await calculateProgress(trip);
+      }
+      setTripProgress(prev => ({ ...prev, ...newProgress }));
+    };
+    
+    updateProgress();
+    const interval = setInterval(updateProgress, 60000); // تحديث كل دقيقة
+    return () => clearInterval(interval);
+  }, [trips.active]);
+
+  const renderTripCard = (trip) => (
+    <View key={trip.id} style={styles.tripCard}>
+      <View style={styles.tripDetails}>
+        <View style={styles.locationContainer}>
+          <View style={styles.locationPoint}>
+            <Text style={styles.locationLabel}>From</Text>
+            {renderLocationName('start', trip.id)}
+          </View>
+          <View style={styles.locationDivider} />
+          <View style={styles.locationPoint}>
+            <Text style={styles.locationLabel}>To</Text>
+            {renderLocationName('end', trip.id)}
           </View>
         </View>
-      ) : partner.partnerType === 'platform' ? (
-        // عرض للناقلين المتحقق منهم
-        <View style={styles.performanceContainer}>
-          <View style={styles.performanceItem}>
-            <Text style={styles.performanceLabel}>Total Trips</Text>
-            <Text style={styles.performanceValue}>{partner.totalTrips}</Text>
+        <View style={styles.tripInfo}>
+          <View style={styles.tripRow}>
+            <Text style={styles.tripLabel}>Trip:</Text>
+            <Text style={styles.tripValue}>{trip.title}</Text>
           </View>
-          <View style={styles.performanceItem}>
-            <Text style={styles.performanceLabel}>On-Time</Text>
-            <Text style={styles.performanceValue}>{partner.performance.onTime}</Text>
+          <View style={styles.tripRow}>
+            <Text style={styles.tripLabel}>Vehicle:</Text>
+            <Text style={styles.tripValue}>{trip.vehicle?.name || 'Not assigned'}</Text>
           </View>
-          <View style={styles.performanceItem}>
-            <Text style={styles.performanceLabel}>Rating</Text>
-            <View style={styles.ratingContainer}>
-              <Text style={styles.ratingText}>{partner.rating}</Text>
-              <Ionicons name="star" size={14} color="#FFD700" />
-            </View>
+          <View style={styles.tripRow}>
+            <Text style={styles.tripLabel}>Driver:</Text>
+            <Text style={styles.tripValue}>
+              {trip.driver ? `${trip.driver.first_name} ${trip.driver.last_name}` : 'Not assigned'}
+            </Text>
           </View>
-        </View>
-      ) : (
-        // عرض للشركاء المخصصين
-        <View style={styles.customPartnerInfo}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Added on:</Text>
-            <Text style={styles.infoValue}>{partner.addedDate}</Text>
+          <View style={styles.tripRow}>
+            <Text style={styles.tripLabel}>Status:</Text>
+            <Text style={styles.tripValue}>{trip.status}</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Contact:</Text>
-            <Text style={styles.infoValue}>{partner.contactPerson}</Text>
-          </View>
-          {partner.notes && (
-            <View style={styles.notesContainer}>
-              <Text style={styles.notesLabel}>Notes:</Text>
-              <Text style={styles.notesText}>{partner.notes}</Text>
-            </View>
+          {trip.status === 'in_progress' || trip.status === 'scheduled' && tripProgress[trip.id] && (
+            <>
+              <View style={styles.tripRow}>
+                <Text style={styles.tripLabel}>Traveled:</Text>
+                <Text style={styles.tripValue}>{`${tripProgress[trip.id].distance} km`}</Text>
+              </View>
+              {tripProgress[trip.id].currentLocation && (
+                <View style={styles.tripRow}>
+                  <Text style={styles.tripLabel}>Current Location:</Text>
+                  <Text style={styles.tripValue}>
+                    {`${tripProgress[trip.id].currentLocation} (${tripProgress[trip.id].lastUpdate})`}
+                  </Text>
+                </View>
+              )}
+            </>
           )}
         </View>
-      )}
-
-      <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="call-outline" size={20} color="#007AFF" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="mail-outline" size={20} color="#007AFF" />
-        </TouchableOpacity>
-        {partner.partnerType === 'platform' ? (
-          // أيقونة العقود للشركاء المتحقق منهم
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="document-text-outline" size={20} color="#007AFF" />
-          </TouchableOpacity>
-        ) : (
-          // أيقونة التعديل للشركاء المخصصين
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="create-outline" size={20} color="#007AFF" />
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity style={styles.scheduleButton}>
-          <Text style={styles.scheduleButtonText}>Schedule Trip</Text>
+        <TouchableOpacity style={styles.tripArrow}>
+          <Text style={styles.arrowText}>▶</Text>
         </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
-  const renderCarrierModeCard = () => (
-    <View style={styles.carrierModeCard}>
-      {!isCarrierModeActive ? (
-        // بطاقة تفعيل وضع الناقل
-        <TouchableOpacity 
-          style={styles.activateCarrierMode}
-          onPress={() => setIsCarrierModeActive(true)}
+  const renderTripsTab = () => {
+    const formatDate = (dateString) => {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true // لعرض AM/PM
+      });
+    };
+
+    return (
+      <View style={styles.tripsSection}>
+        <Text style={styles.sectionTitle}>Manage Trips</Text>
+        
+        <View style={styles.actionButtons}>
+          <View style={styles.tripButtonsRow}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.grayButton, styles.twoThirdButton]} 
+              onPress={() => router.push('/(inputs)/ScheduleTrip')}
+            >
+              <Text style={styles.grayButtonText}>Schedule a New Trip</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.grayButton, styles.oneThirdButton]} 
+              onPress={() => {}}
+            >
+              <Text style={styles.grayButtonText}>Edit Trip</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.greenButton]}
+            onPress={() => {}}
+          >
+            <Text style={styles.greenButtonText}>Start Scheduled Trip</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView 
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
-          <View style={styles.activateHeader}>
-            <MaterialIcons name="local-shipping" size={24} color="#007AFF" />
-            <Text style={styles.activateTitle}>Become a Carrier</Text>
-          </View>
-          <Text style={styles.activateDescription}>
-            Make your fleet available for other businesses. Expand your network and increase revenue.
-          </Text>
-          <View style={styles.benefitsList}>
-            <Text style={styles.benefitItem}>• Receive direct shipping requests</Text>
-            <Text style={styles.benefitItem}>• Set your own rates and availability</Text>
-            <Text style={styles.benefitItem}>• Manage multiple contracts</Text>
-          </View>
-          <TouchableOpacity style={styles.activateButton}>
-            <Text style={styles.activateButtonText}>Activate Carrier Mode</Text>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      ) : (
-        // بطاقة إدارة وضع الناقل
-        <View style={styles.activeCarrierCard}>
-          <View style={styles.statusHeader}>
-            <View>
-              <Text style={styles.statusTitle}>Carrier Status</Text>
-              <View style={styles.verificationStatus}>
-                <View style={[
-                  styles.statusDot,
-                  { backgroundColor: carrierVerificationStatus.status === 'verified' ? '#4CAF50' : '#FFA000' }
-                ]} />
-                <Text style={styles.statusText}>
-                  {carrierVerificationStatus.status === 'verified' ? 'Verified Carrier' : 'Verification Pending'}
-                </Text>
-              </View>
-            </View>
-            <Switch
-              value={isCarrierModeActive}
-              onValueChange={setIsCarrierModeActive}
-            />
+          {/* Upcoming Trips */}
+          <View style={styles.section}>
+            <Text style={styles.sectionSubtitle}>Upcoming</Text>
+            {trips.upcoming.length > 0 ? (
+              trips.upcoming.map(trip => (
+                <React.Fragment key={trip.id}>
+                  <Text style={styles.tripDate}>{formatDate(trip.scheduled_start)}</Text>
+                  {renderTripCard(trip)}
+                </React.Fragment>
+              ))
+            ) : (
+              <Text style={styles.noDataText}>No upcoming trips</Text>
+            )}
           </View>
 
-          <View style={styles.fleetStats}>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Fleet Size</Text>
-              <Text style={styles.statValue}>{carrierVerificationStatus.fleetSize}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Available</Text>
-              <Text style={styles.statValue}>{carrierVerificationStatus.availableVehicles}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Rating</Text>
-              <View style={styles.ratingContainer}>
-                <Text style={styles.ratingValue}>{carrierVerificationStatus.rating}</Text>
-                <Ionicons name="star" size={14} color="#FFD700" />
-              </View>
-            </View>
+          {/* Active Trips */}
+          <View style={styles.section}>
+            <Text style={styles.sectionSubtitle}>Active</Text>
+            {trips.active.length > 0 ? (
+              trips.active.map(trip => (
+                <React.Fragment key={trip.id}>
+                  <Text style={styles.tripDate}>{formatDate(trip.scheduled_start)}</Text>
+                  {renderTripCard(trip)}
+                </React.Fragment>
+              ))
+            ) : (
+              <Text style={styles.noDataText}>No active trips</Text>
+            )}
           </View>
 
-          <View style={styles.carrierSettings}>
-            <TouchableOpacity style={styles.settingButton}>
-              <Text style={styles.settingButtonText}>Set Availability</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.settingButton}>
-              <Text style={styles.settingButtonText}>Update Rates</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.settingButton}>
-              <Text style={styles.settingButtonText}>Manage Requests</Text>
-            </TouchableOpacity>
+          {/* Trip History */}
+          <View style={styles.section}>
+            <Text style={styles.sectionSubtitle}>History</Text>
+            {trips.history.length > 0 ? (
+              trips.history.map(trip => (
+                <React.Fragment key={trip.id}>
+                  <Text style={styles.tripDate}>{formatDate(trip.scheduled_start)}</Text>
+                  {renderTripCard(trip)}
+                </React.Fragment>
+              ))
+            ) : (
+              <Text style={styles.noDataText}>No trip history</Text>
+            )}
           </View>
-
-          {carrierVerificationStatus.status === 'pending' && (
-            <View style={styles.verificationNote}>
-              <Ionicons name="information-circle" size={20} color="#FFA000" />
-              <Text style={styles.verificationText}>
-                Your carrier verification is in progress. We'll notify you once completed.
-              </Text>
-            </View>
-          )}
-        </View>
-      )}
-    </View>
-  );
-
-  const renderMarketplaceVerificationCard = () => (
-    <View style={styles.verificationCard}>
-      <View style={styles.verificationHeader}>
-        <MaterialIcons name="verified" size={32} color="#007AFF" />
-        <Text style={styles.verificationTitle}>Become a Verified Carrier</Text>
+        </ScrollView>
       </View>
-      <Text style={styles.verificationDescription}>
-        Upgrade your account to a verified carrier and get access to:
-      </Text>
-      <View style={styles.benefitsList}>
-        <View style={styles.benefitItem}>
-          <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-          <Text style={styles.benefitText}>Exclusive marketplace opportunities</Text>
-        </View>
-        <View style={styles.benefitItem}>
-          <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-          <Text style={styles.benefitText}>Direct contracts with major companies</Text>
-        </View>
-        <View style={styles.benefitItem}>
-          <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-          <Text style={styles.benefitText}>Priority service listing</Text>
-        </View>
-      </View>
-      <TouchableOpacity style={styles.verificationButton}>
-        <Text style={styles.verificationButtonText}>Start Verification</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderBusinessProfileCard = () => (
-    <View style={styles.businessCard}>
-      <View style={styles.businessHeader}>
-        <MaterialIcons name="business" size={32} color="#007AFF" />
-        <Text style={styles.businessTitle}>Create Business Profile</Text>
-      </View>
-      <Text style={styles.businessDescription}>
-        Leverage your fleet management expertise to start requesting shipping services:
-      </Text>
-      <View style={styles.benefitsList}>
-        <View style={styles.benefitItem}>
-          <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-          <Text style={styles.benefitText}>Request shipping for your clients</Text>
-        </View>
-        <View style={styles.benefitItem}>
-          <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-          <Text style={styles.benefitText}>Work with trusted carriers</Text>
-        </View>
-        <View style={styles.benefitItem}>
-          <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-          <Text style={styles.benefitText}>Integrated shipment management</Text>
-        </View>
-      </View>
-      <TouchableOpacity style={styles.businessButton}>
-        <Text style={styles.businessButtonText}>Create Business Profile</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   return (
-    <View style={styles.container}>
-      {/* شريط التبويب */}
-      <View style={styles.tabContainer}>
-        {['Marketplace', 'Carriers', 'Partners'].map((tab) => (
+    <ScrollView 
+      contentContainerStyle={styles.scrollViewContainer}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >      
+      <View style={styles.tabsContainer}>
+        {['Trips', 'Vehicles', 'Drivers', 'Services'].map((tab) => (
           <TouchableOpacity
             key={tab}
-            style={[
-              styles.tab,
-              activeTab === tab && styles.activeTab
-            ]}
+            style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]}
             onPress={() => setActiveTab(tab)}
           >
-            <Text style={[
-              styles.tabText,
-              activeTab === tab && styles.activeTabText
-            ]}>
-              {tab}
-            </Text>
+            <Text style={[styles.tabText, activeTab === tab ? styles.activeTabText : styles.inactiveTabText]}>{tab}</Text>
           </TouchableOpacity>
         ))}
       </View>
-
-      {/* شريط الفلتر */}
-      <View style={styles.filterContainer}>
-        <Text style={styles.filterText}>Filter</Text>
-        <TouchableOpacity style={styles.filterButton}>
-          <Ionicons name="options-outline" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
-
-      {activeTab === 'Marketplace' ? (
-        // قائمة العروض
-        <ScrollView style={styles.listContainer}>
-          {renderMarketplaceVerificationCard()}
-          {marketplaceData.map((item) => (
-            <View key={item.id} style={styles.card}>
-              {/* رأس البطاقة */}
-              <View style={styles.cardHeader}>
-                <View>
-                  <Text style={styles.companyName}>{item.company}</Text>
-                  <View style={styles.ratingContainer}>
-                    {renderStars(item.rating)}
-                  </View>
-                </View>
-                <View style={styles.priceContainer}>
-                  <Text style={styles.price}>{item.price}</Text>
-                  <Text style={styles.priceLabel}>per Load</Text>
-                </View>
-              </View>
-
-              {/* تفاصيل الرحلة */}
-              <View style={styles.tripDetails}>
-                {/* نقطة الانطلاق */}
-                <View style={styles.locationContainer}>
-                  <View style={styles.dateContainer}>
-                    <Text style={styles.date}>{item.pickupDate}</Text>
-                  </View>
-                  <View style={styles.locationInfo}>
-                    <Ionicons name="location" size={20} color="#000" />
-                    <Text style={styles.location}>{item.pickupLocation}</Text>
-                  </View>
-                </View>
-
-                {/* نقطة الوصول */}
-                <View style={styles.locationContainer}>
-                  <View style={styles.dateContainer}>
-                    <Text style={styles.date}>{item.deliveryDate}</Text>
-                  </View>
-                  <View style={styles.locationInfo}>
-                    <Ionicons name="location" size={20} color="#000" />
-                    <Text style={styles.location}>{item.deliveryLocation}</Text>
-                  </View>
-                </View>
-
-                {/* معلومات إضافية */}
-                <View style={styles.additionalInfo}>
-                  <View style={styles.infoItem}>
-                    <Ionicons name="navigate" size={16} color="#666" />
-                    <Text style={styles.infoText}>{item.distance}</Text>
-                  </View>
-                  <View style={styles.infoItem}>
-                    <Ionicons name="car" size={16} color="#666" />
-                    <Text style={styles.infoText}>{item.vehicleType}</Text>
-                  </View>
-                </View>
-
-                {/* زر الحجز */}
-                <TouchableOpacity style={styles.rideButton}>
-                  <Text style={styles.rideButtonText}>Ride</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      ) : activeTab === 'Carriers' ? (
-        // قائمة الناقلين المتاحين
-        <ScrollView style={styles.listContainer}>
-          {renderBusinessProfileCard()}
-          {renderCarrierModeCard()}
-          {availableCarriers.map((carrier) => (
-            <TouchableOpacity key={carrier.id} style={styles.carrierCard}>
-              <View style={styles.carrierHeader}>
-                <View style={styles.carrierInfo}>
-                  <Text style={styles.carrierName}>{carrier.name}</Text>
-                  <View style={styles.verificationBadge}>
-                    <Ionicons name="shield-checkmark" size={16} color="#4CAF50" />
-                    <Text style={styles.verifiedText}>Verified Carrier</Text>
-                  </View>
-                </View>
-                <View style={styles.availabilityTag}>
-                  <Text style={styles.availabilityText}>{carrier.availability}</Text>
-                </View>
-              </View>
-
-              <View style={styles.fleetInfo}>
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>Fleet Size</Text>
-                  <Text style={styles.infoValue}>{carrier.fleetSize} vehicles</Text>
-                </View>
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>Rate/Km</Text>
-                  <Text style={styles.infoValue}>{carrier.ratePerKm}</Text>
-                </View>
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>Rating</Text>
-                  <View style={styles.ratingContainer}>
-                    <Text style={styles.ratingValue}>{carrier.rating}</Text>
-                    <Ionicons name="star" size={14} color="#FFD700" />
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.vehicleTypes}>
-                {carrier.vehicleTypes.map((type) => (
-                  <View key={type} style={styles.vehicleTag}>
-                    <Text style={styles.vehicleTagText}>{type}</Text>
-                  </View>
-                ))}
-              </View>
-
-              <View style={styles.performanceStats}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Completed Trips</Text>
-                  <Text style={styles.statValue}>{carrier.performance.completedTrips}</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>On-Time Delivery</Text>
-                  <Text style={styles.statValue}>{carrier.performance.onTimeDelivery}</Text>
-                </View>
-              </View>
-
-              <View style={styles.actionButtons}>
-                <TouchableOpacity style={styles.viewProfileButton}>
-                  <Text style={styles.buttonText}>View Profile</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.requestButton}>
-                  <Text style={styles.buttonText}>Request Quote</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      ) : (
-        renderPartnersList()
-      )}
-    </View>
+      {activeTab === 'Trips' && renderTripsTab()}
+      {activeTab === 'Vehicles' && renderVehiclesTab()}
+      {activeTab === 'Vehicles' && renderMaintenanceReport()}
+      {activeTab === 'Drivers' && renderDriversTab()}
+      {activeTab === 'Services' && renderServicesTab()}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+  vehicleImage: {
+    width: '75%', // اجعل الصورة تأخذ العرض الكامل
+    height: '75%', // اجعل الصورة تأخذ الارتفاع الكامل
+    borderRadius: 8, // إذا كنت تريد زوايا دائرية
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  tabContainer: {
+  maintenanceSection: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingTop: 0,
+    paddingBottom: 20,
+    width: '100%', // إضافة عرض كامل
+    paddingHorizontal: 15, // إضافة هوامش جانبية
+  },
+  header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 5,
+  },
+  maintenanceTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1A1A',
+  },
+  iconsContainer: {
+    marginBottom: 6,
+    width: '97%', // تأكيد على العرض الكامل
+    paddingHorizontal: 10, // هوامش داخلية
+  },
+  
+  iconRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    width: '100%', // تأكيد على العرض الكامل
+  },
+  iconWrapper: {
+    padding: 4,
+  },
+  iconBox: {
+    width: 60,
+    height: 60,
+    backgroundColor: '#fff',
+    //borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    //shadowColor: '#000',
+    //shadowOffset: { width: 0, height: 2 },
+    //shadowOpacity: 0.05,
+    //shadowRadius: 4,
+    //elevation: 2,
+  },
+  maintenanceIcon: {
+    width: 36,
+    height: 36,
+  },
+  redBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#FF3B30',
+    width: 22,
+    height: 22,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  tasksContainer: {
+    flex: 1,
+  },
+  taskCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 1,
+    borderWidth: 1,
+    borderColor: '#F1F1F1',
+    width: '100%', // تأكيد على العرض الكامل
+  },
+  taskLeft: {
+    flexDirection: 'row',
+    flex: 1,
+    alignItems: 'center',
+  },
+  taskIconContainer: {
+    width: 48,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  taskIcon: {
+    width: 38,
+    height: 36,
+  },
+  taskDetails: {
+    flex: 1,
+  },
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  label: {
+    width: 70,
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '500',
+  },
+  value: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1A1A1A',
+    fontWeight: '600',
+  },
+  scheduleButton: {
+    padding: 8,
+  },
+  scheduleIcon: {
+    width: 28,
+    height: 28,
+    tintColor: '#4CD964', // لون أخضر فاتح
+  },
+  scrollViewContainer: {
+    alignItems: 'center',
+    paddingTop: 0,
+    backgroundColor: '#fff',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#ccc',
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
   },
   tab: {
     flex: 1,
-    paddingVertical: 15,
     alignItems: 'center',
+    padding: 10,
   },
   activeTab: {
     backgroundColor: '#000',
   },
+  inactiveTab: {
+    backgroundColor: '#fff',
+  },
   tabText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
   },
   activeTabText: {
     color: '#fff',
   },
-  filterContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  filterText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  filterButton: {
-    padding: 5,
-  },
-  listContainer: {
-    padding: 15,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 25,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 15,
-  },
-  companyName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-  },
-  priceContainer: {
-    alignItems: 'flex-end',
-  },
-  price: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  inactiveTabText: {
     color: '#000',
   },
-  priceLabel: {
-    fontSize: 12,
-    color: '#666',
-  },
-  tripDetails: {
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 15,
-  },
-  locationContainer: {
-    marginBottom: 15,
-  },
-  dateContainer: {
-    marginBottom: 5,
-  },
-  date: {
-    fontSize: 14,
-    color: '#666',
-  },
-  locationInfo: {
+  maintenanceGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-  },
-  location: {
-    fontSize: 14,
-    marginLeft: 5,
-  },
-  additionalInfo: {
-    flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    marginBottom: 16,
   },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  infoText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 5,
-  },
-  rideButton: {
-    backgroundColor: '#007AFF',
-    padding: 12,
+  iconContainer: {
+    width: '18%',
+    aspectRatio: 1,
+    backgroundColor: '#F8F8F8',
     borderRadius: 8,
+    justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 0,
   },
-  rideButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  iconText: {
+    fontSize: 24,
   },
-  addPartnerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 15,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#007AFF',
-  },
-  addPartnerText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 10,
-  },
-  partnerCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  partnerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  partnerInfo: {
-    flex: 1,
-  },
-  partnerName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  partnerType: {
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-  },
-  partnerTypeText: {
-    color: '#1976D2',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  statusText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  performanceContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-  },
-  performanceItem: {
-    alignItems: 'center',
-  },
-  performanceLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  performanceValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginRight: 4,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 15,
-    gap: 10,
-  },
-  actionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F5F5F5',
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scheduleButton: {
-    flex: 1,
-    backgroundColor: '#007AFF',
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
+  tasksScrollView: {
+    maxHeight: 300,
   },
-  scheduleButtonText: {
-    color: '#fff',
+  taskInfo: {
+    flex: 1,
+  },
+  taskLabel: {
+    width: 70,
+    color: '#666',
     fontSize: 14,
-    fontWeight: '600',
   },
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginTop: 5,
-  },
-  verifiedText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '500',
-    marginLeft: 5,
-  },
-  customPartnerInfo: {
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
-  infoLabel: {
-    fontSize: 12,
-    color: '#666',
-  },
-  infoValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  notesContainer: {
-    marginTop: 10,
-  },
-  notesLabel: {
-    fontSize: 12,
-    color: '#666',
-  },
-  notesText: {
-    fontSize: 16,
-    color: '#000',
-  },
-  carrierCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  carrierHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  carrierInfo: {
+  taskValue: {
     flex: 1,
-  },
-  carrierName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  verificationBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginTop: 5,
-  },
-  availabilityTag: {
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-  },
-  availabilityText: {
-    color: '#1976D2',
-    fontSize: 12,
+    color: '#000',
+    fontSize: 14,
     fontWeight: '500',
-  },
-  fleetInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-  },
-  infoItem: {
-    alignItems: 'center',
-  },
-  vehicleTypes: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  vehicleTag: {
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-  },
-  vehicleTagText: {
-    color: '#1976D2',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  performanceStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 15,
-  },
-  viewProfileButton: {
-    flex: 1,
-    backgroundColor: '#007AFF',
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  requestButton: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#007AFF',
-  },
-  buttonText: {
-    color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  carrierModeCard: {
-    margin: 15,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  activateCarrierMode: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#007AFF',
-  },
-  activateHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  activateTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 10,
-    color: '#007AFF',
-  },
-  activateDescription: {
-    fontSize: 14,
-    color: '#666',
+    width: '100%',
+    paddingHorizontal: 5,
+    marginTop: 0,
     marginBottom: 15,
   },
-  benefitsList: {
-    marginBottom: 15,
-  },
-  benefitItem: {
-    fontSize: 14,
-    color: '#444',
-    marginBottom: 5,
-  },
-  activateButton: {
-    backgroundColor: '#007AFF',
-    padding: 12,
+  actionButton: {
     borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 8,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 45,
   },
-  activateButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  activeCarrierCard: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statusHeader: {
+  greenButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  statusTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  verificationStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  statusText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  fleetStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-  },
-  settingButton: {
-    backgroundColor: '#007AFF',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  settingButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  verificationNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  verificationText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  brokerType: {
-    backgroundColor: '#E1F5FE',
-  },
-  brokerTypeText: {
-    color: '#0288D1',
-  },
-  brokerPerformance: {
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-  },
-  performanceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  specialtiesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
   },
-  specialtyTag: {
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+  grayButton: {
+    backgroundColor: '#F2F2F2',
+    marginBottom: 12,
   },
-  specialtyText: {
-    color: '#1976D2',
-    fontSize: 12,
+  greenButton: {
+    backgroundColor: '#4CD964',
+    flex: 1,
+  },
+  grayButtonText: {
+    color: '#000000',
+    fontSize: 15,
     fontWeight: '500',
   },
-  verificationCard: {
-    margin: 15,
-    padding: 20,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  greenButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '500',
+    textAlign: 'center',
   },
-  verificationHeader: {
-    flexDirection: 'row',
+  vehiclesSection: {
+    width: '100%',
+    padding: 16,
+    paddingBottom: 0,
+  },
+  addButton: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 15,
   },
-  verificationTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 10,
-    color: '#007AFF',
+  assignButton: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
   },
-  verificationDescription: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
+  section: {
+    marginBottom: 22,
   },
-  benefitsList: {
-    marginBottom: 20,
-  },
-  benefitItem: {
+  sectionHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  benefitText: {
-    fontSize: 15,
-    color: '#444',
-    marginLeft: 10,
+  moreButton: {
+    width: 18, // عرض الصورة
+    height: 18, // ارتفاع الصورة
   },
-  verificationButton: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 8,
+  vehiclesScroll: {
+    marginBottom: 16,
+  },
+  vehicleCard: {
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  vehicleIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#021037',
+    overflow: 'hidden',
+  },
+  alertBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  verificationButtonText: {
-    color: '#fff',
-    fontSize: 16,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  sectionSubtitle: {
+    fontSize: 17,
     fontWeight: '600',
+    marginBottom: 12,
   },
-  businessCard: {
-    margin: 15,
-    padding: 20,
+  buttonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  container: {
+    flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    alignItems: 'center',
+    paddingTop: 0,
   },
-  businessHeader: {
+  button: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: '#007BFF', // لون الخلفية
+    borderRadius: 5,
+  },
+  vehiclesList: {
+    marginTop: 10,
+  },
+  maintenanceReport: {
+    marginTop: 0,
+  },
+  vehiclesListContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    width: '100%',
+  },
+  vehicleItem: {
+    alignItems: 'center',
+  },
+  alertCount: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: 'red',
+    color: 'white',
+    borderRadius: 10,
+    padding: 2,
+    fontSize: 12,
+  },
+  vehicleName: {
+    marginTop: 5,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+  },
+  driversSection: {
+    width: '100%',
+    padding: 16,
+    paddingBottom: 500,
+  },
+  driverCard: {
+    alignItems: 'center',
+    marginRight: 20,
+    width: 120,
+  },
+  driverImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: '#eee',
+  },
+  driverInfo: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  driverName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  vehicleInfo: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  vehicleDetails: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  deviceInfo: {
+    marginTop: 4,
+    padding: 4,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 4,
+  },
+  deviceName: {
+    fontSize: 13,
+    color: '#0066CC',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  serialNumber: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  noDevice: {
+    fontSize: 13,
+    color: '#999',
+    //fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  driversScroll: {
+    marginBottom: 16,
+  },
+  driverIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+  },
+  assignedVehicleInfo: {
+    marginTop: 4,
+    padding: 4,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 4,
+  },
+  assignedVehicleName: {
+    fontSize: 13,
+    color: '#0066CC',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  assignedVehiclePlate: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  noAssignedVehicle: {
+    fontSize: 13,
+    color: '#999',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  tripsSection: {
+    width: '100%',
+    padding: 16,
+    paddingBottom: 275,
+  },
+  tripCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  tripDate: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#666',
+  },
+  tripDetails: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
   },
-  businessTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 10,
-    color: '#007AFF',
+  tripIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 30,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
-  businessDescription: {
-    fontSize: 16,
+  tripIcon: {
+    width: 30,
+    height: 30,
+    //tintColor: '#fff',
+  },
+  tripIconText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  tripInfo: {
+    flex: 1,
+  },
+  tripRow: {
+    flexDirection: 'row',
+    gap: 0,
+    marginBottom: 4,
+  },
+  tripLabel: {
+    width: 65,
+    fontSize: 11.5,
     color: '#666',
-    marginBottom: 20,
+    fontWeight: '500',
   },
-  businessButton: {
-    backgroundColor: '#007AFF',
-    padding: 15,
+  tripValue: {
+    flex: 1,
+    fontSize: 11.5,
+    color: '#000',
+    fontWeight: '500',
+  },
+  tripArrow: {
+    padding: 8,
+  },
+  arrowText: {
+    color: '#5CE960',
+    fontSize: 25,
+  },
+  tripButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    gap: 8,
+  },
+  
+  twoThirdButton: {
+    flex: 2, // يأخذ ثلثي المساحة
+  },
+  
+  oneThirdButton: {
+    flex: 1, // يأخذ ثلث المساحة
+  },
+  servicesSection: {
+    width: '100%',
+    padding: 16,
+  },
+  serviceCard: {
+    backgroundColor: '#fff',
     borderRadius: 8,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  serviceDate: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#666',
+  },
+  serviceDetails: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  businessButtonText: {
-    color: '#fff',
-    fontSize: 16,
+  serviceIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 30,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  serviceIcon: {
+    width: 30,
+    height: 30,
+    //tintColor: '#fff',
+  },
+  serviceInfo: {
+    flex: 1,
+  },
+  serviceRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  serviceLabel: {
+    width: 70,
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  serviceValue: {
+    flex: 1,
+    fontSize: 12,
+    color: '#000',
+    fontWeight: '500',
+  },
+  serviceArrow: {
+    padding: 8,
+  },
+  tripsContainer: {
+    padding: 16,
+    flexGrow: 1,
+  },
+  locationContainer: {
+    width: 80,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  locationPoint: {
+    alignItems: 'center',
+  },
+  locationLabel: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  coordinates: {
+    fontSize: 11,
+    color: '#000',
+    fontWeight: '500',
+  },
+  locationDivider: {
+    height: 20,
+    width: 1,
+    backgroundColor: '#ddd',
+    marginVertical: 4,
+  },
+  cityName: {
+    fontSize: 12,
+    color: '#000',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  progressContainer: {
+    flex: 1,
+    height: 20,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginLeft: 8,
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    position: 'absolute',
+  },
+  progressText: {
+    position: 'absolute',
+    width: '100%',
+    textAlign: 'center',
+    lineHeight: 20,
+    color: '#000',
+    fontSize: 12,
     fontWeight: '600',
   },
 });
